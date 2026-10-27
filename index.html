@@ -368,7 +368,7 @@ editorSection.append(editorHeading,editorContents);
 if(editorButton){editorContents.appendChild(editorButton);editorButton.style.width='100%'}
 if(editorStatus)editorContents.appendChild(editorStatus);
 if(login){editorContents.appendChild(login);login.style.flexDirection='column'}
-groupRow.appendChild(editorSection);
+$('menuPreferences').insertAdjacentElement('afterend',editorSection);
 const teacherWeek=$('teacherNum')?.parentElement;
 const teacherDate=$('teacherDate')?.closest('.editbar');
 if(teacherWeek){teacherWeek.id='sideTeacherWeek';side.insertBefore(teacherWeek,$('menuPreferences'))}
