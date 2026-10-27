@@ -14,7 +14,7 @@
  <div id="teacherLogin"><label for="teacherSelect">Преподаватель</label><select id="teacherSelect"></select><label for="teacherCode">Личный тестовый код (не менее 4 символов)</label><input id="teacherCode" type="password" placeholder="Введите код" autocomplete="off"><label style="display:flex;align-items:center;gap:9px"><input id="teacherRemember" type="checkbox" checked style="width:auto;margin:0"> Запомнить вход на устройстве</label><button id="teacherEnter">Войти</button><p id="teacherError" class="teacherHint" role="alert"></p><p class="note">Демо: код создаётся при первом входе и хранится только в этом браузере. На другом устройстве он не проверяется общим сервером.</p></div>
  <div id="teacherLogged" class="hiddenMode"><div class="selectedTeacher" id="teacherIdentity"></div><div class="teacherActions"><button id="teacherLogout">Выйти</button><button id="teacherSwitch">Сменить преподавателя</button></div></div>
  </div>
- <div id="teacherSchedule" class="hiddenMode"><div class="weekbuttons" style="margin:10px 0 14px"><button id="teacherNum">Числитель</button><button id="teacherDen">Знаменатель</button></div><p class="note">Правки преподавателя видны студентам соответствующей группы в этом браузере. Общая синхронизация появится после подключения сервера.</p><div class="editbar"><label for="teacherDate">Неделя с даты</label><input id="teacherDate" type="date"><button id="teacherPrev">←</button><button id="teacherNext">→</button></div><div id="teacherOverview" class="muted"></div><div id="teacherDays" class="days" style="margin-top:14px"></div></div>
+ <div id="teacherSchedule" class="hiddenMode"><div class="weekbuttons" style="margin:10px 0 14px"><button id="teacherNum">Числитель</button><button id="teacherDen">Знаменатель</button></div><p class="note">Правки преподавателя видны студентам соответствующей группы в этом браузере. Общая синхронизация появится после подключения сервера.</p><div class="editbar"><label for="teacherDate">Неделя с даты</label><input id="teacherDate" type="date"><button id="teacherPrev">←</button><button id="teacherNext">→</button></div><section id="teacherFocus" class="lessonfocus" style="margin:14px 0"><div class="muted">Сейчас и следующая пара преподавателя</div><h2 id="teacherFocusSubject">Проверяем расписание…</h2><div class="countdown" id="teacherFocusTimer">—</div><div class="muted" id="teacherFocusDesc"></div><div class="focusProgress"><div id="teacherFocusBar" style="width:0%"></div></div></section><div id="teacherOverview" class="muted"></div><div id="teacherDays" class="days" style="margin-top:14px"></div></div>
 </section>
 <section class="toolbar"><select id="group" aria-label="Группа"></select><div class="weekbuttons"><button id="num" class="active">Числитель</button><button id="den">Знаменатель</button></div></section><div class="editbar"><label for="date">Неделя с даты</label><input type="date" id="date" value="2026-10-26"><button id="prev" title="Предыдущая неделя">←</button><button id="next" title="Следующая неделя">→</button><button id="editorToggle">Войти как староста</button><span class="editor-state" id="editorStatus"></span></div><div id="loginPanel" class="editbar" style="display:none"><div style="flex:1;min-width:180px"><label id="loginLabel" for="editorCode">Код старосты</label><input id="editorCode" type="password" placeholder="Код от 4 символов" autocomplete="off" style="display:block;width:100%;margin-top:6px"></div><button id="confirmEditor">Подтвердить</button><button id="cancelEditor">Отмена</button><span class="editor-state" id="loginError" role="alert"></span></div><div id="summary" class="muted" style="margin-bottom:18px"></div><p class="tips">Демонстрация: вход по коду группы работает в этом браузере. Изменения сохраняются локально, если браузер разрешает хранение данных. Настоящее разграничение прав и общие обновления для студентов потребуют сервера.</p><section id="days" class="days"></section><details class="admin" style="display:none"><summary>Управление · загрузить новое расписание</summary><p class="note">Загружайте только доверенные .xlsx файлы из вашего колледжа. Новый файл заменяет выбранную неделю. Проверяйте предпросмотр после каждой загрузки.</p><form id="upload" class="upload"><select name="week"><option value="numerator">Числитель</option><option value="denominator">Знаменатель</option></select><input type="file" name="file" accept=".xlsx" required><button>Загрузить Excel</button></form><p id="msg" class="note"></p></details><footer>Пара+ · Первая версия. Время начала в Excel может содержать варианты через «/»: показываем их без предположений.</footer></main><script>
 let data={},week='numerator',group='ГД-125';const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const names={numerator:'Числитель',denominator:'Знаменатель'};const defaultTimes=['08:30','10:10','12:05','13:45','15:25','17:05'];
@@ -49,7 +49,7 @@ const safeDrop=k=>{try{localStorage.removeItem(k)}catch{}};
 const teacherKey=t=>'para_teacher_demo_code_'+encodeURIComponent(t);
 function teachers(){const set=new Set();for(const wk of Object.values(data)){for(const days of Object.values(wk.groups||{})){for(const day of Object.values(days)){for(const l of day.lessons||[]){const raw=String(l.teacher||'').trim();if(!raw||raw.includes('/'))continue; if(/^[А-ЯЁ][а-яё-]+\s+[А-ЯЁ]\.[А-ЯЁ]\.$/u.test(raw))set.add(raw)}}}}return [...set].sort((a,b)=>a.localeCompare(b,'ru'))}
 function fill(){const ts=teachers();if(!ts.length)return;selected=safeGet('para_teacher_selected')||ts[0];if(!ts.includes(selected))selected=ts[0];q('teacherSelect').innerHTML=ts.map(t=>`<option value="${esc(t)}" ${selected===t?'selected':''}>${esc(t)}</option>`).join('');const remembered=safeGet('para_teacher_remembered');if(remembered&&remembered===selected)enterSession(selected,false)}
-function changeMode(next){mode=next;const student=next==='student';q('teacherArea').classList.toggle('hiddenMode',student);q('studentMode').classList.toggle('active',student);q('teacherMode').classList.toggle('active',!student);for(const id of ['group','num','den','date','prev','next','editorToggle','editorStatus','summary','loginPanel','days']){const el=q(id);if(el){if(id==='group')el.parentElement.classList.toggle('hiddenMode',!student);else if(['date','prev','next','editorToggle','editorStatus'].includes(id))el.closest('.editbar').classList.toggle('hiddenMode',!student);else if(id==='days'||id==='summary')el.classList.toggle('hiddenMode',!student)}}document.querySelector('.tips').classList.toggle('hiddenMode',!student);if(!student)drawTeacher()}
+function changeMode(next){mode=next;const student=next==='student';q('teacherArea').classList.toggle('hiddenMode',student);q('studentMode').classList.toggle('active',student);q('teacherMode').classList.toggle('active',!student);for(const id of ['group','num','den','date','prev','next','editorToggle','editorStatus','summary','loginPanel','days']){const el=q(id);if(el){if(id==='group')el.parentElement.classList.toggle('hiddenMode',!student);else if(['date','prev','next','editorToggle','editorStatus'].includes(id))el.closest('.editbar').classList.toggle('hiddenMode',!student);else if(id==='days'||id==='summary')el.classList.toggle('hiddenMode',!student)}}document.querySelector('.tips').classList.toggle('hiddenMode',!student);if(!student){drawTeacher();teacherLiveTimer()}
 function enterSession(t,remember){selected=t;teacherSession=true;safeSet('para_teacher_selected',t);if(remember)safeSet('para_teacher_remembered',t);q('teacherLogin').classList.add('hiddenMode');q('teacherLogged').classList.remove('hiddenMode');q('teacherSchedule').classList.remove('hiddenMode');q('teacherIdentity').textContent='Преподаватель: '+t;drawTeacher()}
 function logOut(){teacherSession=false;safeDrop('para_teacher_remembered');q('teacherLogin').classList.remove('hiddenMode');q('teacherLogged').classList.add('hiddenMode');q('teacherSchedule').classList.add('hiddenMode');q('teacherCode').value=''}
 function teacherAuth(){const t=q('teacherSelect').value,code=q('teacherCode').value.trim(),existing=safeGet(teacherKey(t));if(code.length<4){q('teacherError').textContent='Введите минимум 4 символа';return}if(existing&&existing!==code){q('teacherError').textContent='Неверный код на этом устройстве';return}if(!existing)safeSet(teacherKey(t),code);q('teacherError').textContent='';enterSession(t,q('teacherRemember').checked)}
@@ -82,10 +82,42 @@ function drawTeacher(){
  q('teacherDays').querySelectorAll('[data-teacher-reset]').forEach(el=>el.onclick=()=>{if(!confirm('Удалить изменение и вернуть исходную пару?'))return;const all=changes();delete all[el.dataset.teacherReset];if(saveChanges(all)){teacherEditing=null;drawTeacher();}});
  q('teacherDays').querySelectorAll('form.teacherEditForm').forEach(form=>form.onsubmit=e=>{e.preventDefault();const fd=new FormData(form),start=fd.get('timeStart'),end=fd.get('timeEnd');if(end<=start){alert('Время окончания должно быть позже начала');return}const all=changes();all[form.dataset.key]={timeStart:start,timeEnd:end,subject:fd.get('subject'),room:fd.get('room'),teacher:fd.get('teacher'),comment:fd.get('comment'),cancelled:fd.has('cancelled'),updatedAt:new Date().toISOString(),editedBy:'teacher'};if(saveChanges(all)){teacherEditing=null;drawTeacher()}});
 }
+function teacherLiveTimer(){
+ const box=q('teacherFocus');if(!box)return;
+ if(!teacherSession||mode!=='teacher'){box.style.display='none';return}box.style.display='';
+ const now=new Date(), all=changes();let next=null;
+ const timeValid=t=>/^([01]?\\d|2[0-3]):[0-5]\\d$/.test(String(t||''));
+ const at=(iso,t)=>{let d=new Date(iso+'T12:00:00'),[h,m]=t.split(':').map(Number);d.setHours(h,m,0,0);return d};
+ const isoDay=offset=>{let d=new Date();d.setDate(d.getDate()+offset);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+ for(let offset=0;offset<28&&!next;offset++){
+  const date=isoDay(offset),dayIdx=(new Date(date+'T12:00:00').getDay()+6)%7;if(dayIdx>5)continue;
+  const n=Math.round((utcDate(monday(date))-anchorUTC)/604800000),week=Math.abs(n%2)===0?'numerator':'denominator';
+  const candidates=[];
+  for(const [grp,days] of Object.entries(data[week]?.groups||{}))for(const lesson of days[dayNames[dayIdx]]?.lessons||[]){
+   const override=all[[grp,date,lesson.pair].join('::')]||{},actual={...lesson,...override};
+   if(actual.cancelled||!(splitTeacherMatch(lesson.teacher,selected)||splitTeacherMatch(actual.teacher,selected)))continue;
+   const start=actual.timeStart||startTime(lesson.pair),end=actual.timeEnd||endTime(start);
+   if(!timeValid(start)||!timeValid(end))continue;
+   const begin=at(date,start),finish=at(date,end);if(finish<=begin||finish<=now)continue;
+   candidates.push({...actual,grp,date,start,end,begin,finish,running:begin<=now});
+  }
+  candidates.sort((a,b)=>(a.running?0:1)-(b.running?0:1)||a.begin-b.begin);
+  next=candidates[0]||null;
+ }
+ if(!next){q('teacherFocusSubject').textContent='Ближайших занятий не найдено';q('teacherFocusTimer').textContent='—';q('teacherFocusDesc').textContent='Проверьте расписание на ближайшие недели';q('teacherFocusBar').style.width='0%';return}
+ const target=next.running?next.finish:next.begin;
+ const sec=Math.max(0,Math.ceil((target-now)/1000)),dd=Math.floor(sec/86400),hh=Math.floor(sec%86400/3600),mm=Math.floor(sec%3600/60),ss=sec%60;
+ q('teacherFocusTimer').textContent=(dd?dd+' д. ':'')+[hh,mm,ss].map(x=>String(x).padStart(2,'0')).join(':');
+ const dayLabel=next.date===isoDay(0)?'сегодня':next.date===isoDay(1)?'завтра':new Date(next.date+'T12:00:00').toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+ q('teacherFocusSubject').textContent=(next.running?'Сейчас: ':'Следующая пара: ')+next.subject;
+ q('teacherFocusDesc').textContent=(next.running?'До окончания · ':'До начала · ')+dayLabel+', '+next.start+'–'+next.end+' · '+next.grp+' · ауд. '+(next.room||'—');
+ q('teacherFocusBar').style.width=next.running?Math.max(0,Math.min(100,100*(now-next.begin)/(next.finish-next.begin)))+'%':'0%';
+}
+setInterval(teacherLiveTimer,1000);
 q('studentMode').onclick=()=>changeMode('student');q('teacherMode').onclick=()=>changeMode('teacher');q('teacherEnter').onclick=teacherAuth;q('teacherCode').onkeydown=e=>{if(e.key==='Enter')teacherAuth()};q('teacherSelect').onchange=e=>{selected=e.target.value;safeSet('para_teacher_selected',selected)};q('teacherLogout').onclick=logOut;q('teacherSwitch').onclick=logOut;q('teacherPrev').onclick=()=>{q('teacherDate').value=addDays(monday(q('teacherDate').value),-7);drawTeacher()};q('teacherNext').onclick=()=>{q('teacherDate').value=addDays(monday(q('teacherDate').value),7);drawTeacher()};q('teacherDate').onchange=drawTeacher;q('teacherNum').onclick=()=>teacherWeekDate('numerator');q('teacherDen').onclick=()=>teacherWeekDate('denominator');
 q('teacherDate').value=activeDate;
 const oldLoad=load; // the original loader already runs asynchronously; wait for imported data to be ready
-const originalRender=render; render=function(){originalRender();if(mode==='teacher')drawTeacher()};
+const originalRender=render; render=function(){originalRender();if(mode==='teacher'){drawTeacher();teacherLiveTimer()}};
 const ready=()=>{if(Object.keys(data).length){fill()}else setTimeout(ready,40)};ready();
 })();
 </script>
@@ -111,7 +143,7 @@ const originalSave=saveChanges;
 saveChanges=function(o){const before=changes(),diff=Object.keys({...before,...o}).filter(k=>JSON.stringify(before[k]??null)!==JSON.stringify(o[k]??null));const ok=originalSave(o);if(ok&&diff.length){const hist=getHistory();for(const key of diff)hist.push({key,before:before[key]??null,after:o[key]??null,at:new Date().toISOString()});localSet('para_plus_history_11',JSON.stringify(hist.slice(-100)));historyDraw();}return ok};
 function tick(){
  if(typeof data!=='object'||!data||!data.numerator||!data.denominator)return;
- if(typeof mode!=='undefined'&&mode==='teacher'){focus.style.display='none';return}
+ if(!document.getElementById('teacherArea').classList.contains('hiddenMode')){focus.style.display='none';return}
  focus.style.display='';
  const now=new Date(),edits=changes();
  const mins=t=>{const m=/^(\d{1,2}):(\d{2})$/.exec(String(t||''));return m?Number(m[1])*60+Number(m[2]):NaN};
@@ -147,7 +179,7 @@ function tick(){
  $x('focusBar').style.width=running?Math.max(0,Math.min(100,100*(now-l.begin)/(l.finish-l.begin)))+'%':'0%';
 }
 const oldRender=render;render=function(){oldRender();tick()};
-const oldChangeMode=changeMode;changeMode=function(x){oldChangeMode(x);tick()};
+document.getElementById('studentMode').addEventListener('click',tick);document.getElementById('teacherMode').addEventListener('click',tick);
 activeDate=toMonday(todayISO());
 // Existing load starts on initialization; redraw when data is ready.
 const init=setInterval(()=>{if(typeof data==='object'&&data&&Object.keys(data).length){clearInterval(init);render();historyDraw();tick()}},100);
