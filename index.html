@@ -54,6 +54,14 @@ function enterSession(t,remember){selected=t;teacherSession=true;safeSet('para_t
 function logOut(){teacherSession=false;safeDrop('para_teacher_remembered');q('teacherLogin').classList.remove('hiddenMode');q('teacherLogged').classList.add('hiddenMode');q('teacherSchedule').classList.add('hiddenMode');q('teacherCode').value=''}
 function teacherAuth(){const t=q('teacherSelect').value,code=q('teacherCode').value.trim(),existing=safeGet(teacherKey(t));if(code.length<4){q('teacherError').textContent='Введите минимум 4 символа';return}if(existing&&existing!==code){q('teacherError').textContent='Неверный код на этом устройстве';return}if(!existing)safeSet(teacherKey(t),code);q('teacherError').textContent='';enterSession(t,q('teacherRemember').checked)}
 function splitTeacherMatch(raw,t){const a=String(raw||'').trim();if(a===t)return true;const surname=t.split(' ')[0].toLowerCase();const parts=a.split('/').map(x=>x.trim().toLowerCase());return parts.some(x=>x===surname||x.startsWith(surname+' '))}
+function teacherSpecificLesson(lesson,teacher){
+ const raw=String(lesson.teacher||'').trim(), names=raw.split('/').map(x=>x.trim());
+ const surname=String(teacher||'').split(' ')[0].toLowerCase();
+ const idx=names.findIndex(x=>x.toLowerCase()===surname||x.toLowerCase().startsWith(surname+' ')||x.toLowerCase()===String(teacher||'').toLowerCase());
+ if(idx<0 && !splitTeacherMatch(raw,teacher))return null;
+ const part=(v)=>{const arr=String(v||'').split('/');return arr.length>1?(arr[idx<0?0:idx]||'').trim()||String(v||''):v};
+ return {...lesson,subject:part(lesson.subject),room:part(lesson.room)};
+}
 let teacherEditing=null;
 function teacherWeekDate(target){const base=monday(q('teacherDate').value||activeDate);const n=Math.round((utcDate(base)-anchorUTC)/604800000);const current=Math.abs(n%2)===0?'numerator':'denominator';if(current!==target)q('teacherDate').value=addDays(base,7);drawTeacher()}
 function drawTeacher(){
@@ -67,8 +75,8 @@ function drawTeacher(){
   for(const [grp,days] of Object.entries(list))for(const l of days[day]?.lessons||[]){
     const k=[grp,date,l.pair].join('::'),change=all[k]||{},actual={...l,...change};
     if(splitTeacherMatch(actual.teacher,selected)){
-      const start=actual.timeStart||startTime(l.pair),end=actual.timeEnd||endTime(start),uncertain=String(l.teacher).includes('/');
-      if(uncertain)ambiguous++;rows.push({grp,...actual,start,end,uncertain,pair:l.pair,k});
+      const shown=teacherSpecificLesson(actual,selected)||teacherSpecificLesson(l,selected)||actual;const start=actual.timeStart||startTime(l.pair),end=actual.timeEnd||endTime(start),uncertain=String(l.teacher).includes('/');
+      if(uncertain)ambiguous++;rows.push({grp,...actual,subject:shown.subject,room:shown.room,start,end,uncertain,pair:l.pair,k});
     }
   }
   rows.sort((a,b)=>a.start.localeCompare(b.start)||a.grp.localeCompare(b.grp));count+=rows.length;
@@ -99,7 +107,7 @@ function teacherLiveTimer(){
    const start=actual.timeStart||startTime(lesson.pair),end=actual.timeEnd||endTime(start);
    if(!timeValid(start)||!timeValid(end))continue;
    const begin=at(date,start),finish=at(date,end);if(finish<=begin||finish<=now)continue;
-   candidates.push({...actual,grp,date,start,end,begin,finish,running:begin<=now});
+   const shown=teacherSpecificLesson(actual,activeTeacher)||teacherSpecificLesson(lesson,activeTeacher)||actual;candidates.push({...actual,subject:shown.subject,room:shown.room,grp,date,start,end,begin,finish,running:begin<=now});
   }
   candidates.sort((a,b)=>(a.running?0:1)-(b.running?0:1)||a.begin-b.begin);
   next=candidates[0]||null;
