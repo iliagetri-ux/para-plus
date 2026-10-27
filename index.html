@@ -100,13 +100,8 @@ function setTheme(t){document.body.classList.toggle('light',t==='light');localSe
 setTheme(localGet('para_plus_theme')||'dark');themeBtn.onclick=()=>setTheme(document.body.classList.contains('light')?'dark':'light');
 const student=document.querySelector('#studentMode');
 const focus=document.createElement('section');focus.id='lessonFocus';focus.className='lessonfocus';focus.innerHTML='<div class="muted">Сейчас и следующая пара</div><h2 id="focusSubject">Проверяем расписание…</h2><div class="countdown" id="focusTimer">—</div><div class="muted" id="focusDesc"></div><div class="focusProgress"><div id="focusBar" style="width:0%"></div></div>';student.closest('.modeNav').insertAdjacentElement('afterend',focus);
-const shortcuts=document.createElement('div');shortcuts.className='quickbar';shortcuts.innerHTML='<button type="button" id="todayButton">Сегодня</button><button type="button" id="tomorrowButton">Завтра</button><button type="button" id="weekButton">Неделя</button>';
-focus.insertAdjacentElement('afterend',shortcuts);
-let dayFocus=new Date();
 function todayISO(offset=0){const d=new Date();d.setDate(d.getDate()+offset);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function toMonday(s){return monday(s)}
-function jump(offset){dayFocus=new Date();dayFocus.setDate(dayFocus.getDate()+offset);activeDate=toMonday(todayISO(offset));editing=null;render();tick()}
-$x('todayButton').onclick=()=>jump(0);$x('tomorrowButton').onclick=()=>jump(1);$x('weekButton').onclick=()=>{activeDate=toMonday(todayISO());render();tick()};
 const hist=document.createElement('section');hist.className='historyPanel';hist.innerHTML='<details><summary style="cursor:pointer;font-weight:700">История изменений и отмена правки</summary><div class="note" style="margin:8px 0">Изменения сохраняются только на этом устройстве. Любой пользователь этого браузера может отменить правку в демоверсии.</div><div id="changeHistory"></div></details>';document.querySelector('footer').before(hist);
 function getHistory(){try{return JSON.parse(localGet('para_plus_history_11')||'[]')}catch{return []}}
 function historyDraw(){const list=getHistory();$x('changeHistory').innerHTML=list.length?list.slice().reverse().slice(0,40).map((a,i)=>`<div class="historyRow"><div><b>${esc(a.key.split('::')[0])}</b> · ${esc(a.key.split('::')[1])} · №${esc(a.key.split('::')[2])}<div class="detail">${esc(a.at.slice(0,16).replace('T',' '))} · ${a.after?'Изменено':'Возвращено из Excel'}</div></div><button type="button" data-undo="${list.length-1-i}">Отменить</button></div>`).join(''):'<p class="empty">Изменений пока нет</p>';
@@ -115,21 +110,46 @@ $x('changeHistory').querySelectorAll('[data-undo]').forEach(btn=>btn.onclick=()=
 const originalSave=saveChanges;
 saveChanges=function(o){const before=changes(),diff=Object.keys({...before,...o}).filter(k=>JSON.stringify(before[k]??null)!==JSON.stringify(o[k]??null));const ok=originalSave(o);if(ok&&diff.length){const hist=getHistory();for(const key of diff)hist.push({key,before:before[key]??null,after:o[key]??null,at:new Date().toISOString()});localSet('para_plus_history_11',JSON.stringify(hist.slice(-100)));historyDraw();}return ok};
 function tick(){
-if(typeof data!=='object'||!data)return;
-if(typeof mode!=='undefined'&&mode==='teacher'){focus.style.display='none';shortcuts.style.display='none';return}focus.style.display='';shortcuts.style.display='';
-const selected=todayISO(),base=toMonday(selected),dateForView=toMonday(activeDate),isToday=base===dateForView;
-const dayIdx=(new Date().getDay()+6)%7;const groups=data[week]?.groups||{};const day=dayNames[dayIdx];const lessons=groups[group]?.[day]?.lessons||[];
-const now=new Date(),min=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;let items=lessons.map(l=>{let o=changes()[[group,selected,l.pair].join('::')]||{},st=o.timeStart||startTime(l.pair),en=o.timeEnd||endTime(st);const toMin=t=>{const m=/^(\d\d?):(\d\d)$/.exec(t||'');return m?Number(m[1])*60+Number(m[2]):NaN};return {...l,...o,st,en,a:toMin(st),b:toMin(en)}}).filter(l=>!l.cancelled&&Number.isFinite(l.a)&&Number.isFinite(l.b)&&l.b>l.a).sort((a,b)=>a.a-b.a);
-const active=items.find(l=>min>=l.a&&min<l.b);const upcoming=items.find(l=>l.a>min);const chosen=active||upcoming;
-if(!isToday){$x('focusSubject').textContent='Расписание другой недели';$x('focusTimer').textContent='—';$x('focusDesc').textContent='Нажми «Сегодня», чтобы увидеть живой таймер';$x('focusBar').style.width='0%';return}
-if(!chosen){$x('focusSubject').textContent=items.length?'На сегодня пары закончились':'Сегодня занятий нет';$x('focusTimer').textContent='✓';$x('focusDesc').textContent='';$x('focusBar').style.width='0%';return}
-const seconds=Math.max(0,Math.ceil(((active?chosen.b:chosen.a)-min)*60));const hh=Math.floor(seconds/3600),mm=Math.floor(seconds%3600/60),ss=seconds%60;
-$x('focusSubject').textContent=(active?'Идёт: ':'Следующая: ')+chosen.subject;$x('focusTimer').textContent=(hh?String(hh).padStart(2,'0')+':':'')+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');$x('focusDesc').textContent=(active?'До конца · ':'До начала · ')+chosen.st+'–'+chosen.en+' · ауд. '+(chosen.room||'—');$x('focusBar').style.width=active?Math.max(0,Math.min(100,100*(min-chosen.a)/(chosen.b-chosen.a)))+'%':'0%';
+ if(typeof data!=='object'||!data||!data.numerator||!data.denominator)return;
+ if(typeof mode!=='undefined'&&mode==='teacher'){focus.style.display='none';return}
+ focus.style.display='';
+ const now=new Date(),edits=changes();
+ const mins=t=>{const m=/^(\d{1,2}):(\d{2})$/.exec(String(t||''));return m?Number(m[1])*60+Number(m[2]):NaN};
+ const dateObj=(date,t)=>{const [h,m]=t.split(':').map(Number);const d=new Date(date+'T12:00:00');d.setHours(h,m,0,0);return d};
+ let selected=null;
+ // Search ahead by actual date: holidays and Saturdays without lessons are skipped.
+ for(let offset=0;offset<21&&!selected;offset++){
+  const isoDate=todayISO(offset),weekday=(new Date(isoDate+'T12:00:00').getDay()+6)%7;
+  if(weekday>5)continue;
+  const widx=Math.round((utcDate(monday(isoDate)).getTime()-anchorUTC)/604800000);
+  const currentWeek=Math.abs(widx%2)===0?'numerator':'denominator';
+  const d=data[currentWeek]?.groups?.[group]?.[dayNames[weekday]];
+  if(!d)continue;
+  const entries=(d.lessons||[]).map(l=>{
+   const override=edits[[group,isoDate,l.pair].join('::')]||{};
+   const v={...l,...override},st=v.timeStart||startTime(l.pair),en=v.timeEnd||endTime(st);
+   if(v.cancelled||!Number.isFinite(mins(st))||!Number.isFinite(mins(en))||mins(en)<=mins(st))return null;
+   return {...v,date:isoDate,st,en,begin:dateObj(isoDate,st),finish:dateObj(isoDate,en)};
+  }).filter(Boolean).sort((x,y)=>x.begin-y.begin);
+  const running=entries.find(l=>l.begin<=now&&l.finish>now);
+  const upcoming=entries.find(l=>l.begin>now);
+  selected=running?{lesson:running,running:true}:upcoming?{lesson:upcoming,running:false}:null;
+ }
+ if(!selected){$x('focusSubject').textContent='Ближайших занятий не найдено';$x('focusTimer').textContent='—';$x('focusDesc').textContent='Проверь расписание и изменения на ближайшие дни';$x('focusBar').style.width='0%';return}
+ const {lesson:l,running}=selected;
+ const target=running?l.finish:l.begin;
+ const seconds=Math.max(0,Math.ceil((target.getTime()-now.getTime())/1000));
+ const dd=Math.floor(seconds/86400),hh=Math.floor(seconds%86400/3600),mm=Math.floor(seconds%3600/60),ss=seconds%60;
+ $x('focusTimer').textContent=(dd?dd+' д. ':'')+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+ const dayCaption= l.date===todayISO()?'сегодня':l.date===todayISO(1)?'завтра':new Date(l.date+'T12:00:00').toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+ $x('focusSubject').textContent=(running?'Сейчас: ':'Следующая пара: ')+l.subject;
+ $x('focusDesc').textContent=(running?'До окончания · ':'До начала · ')+dayCaption+', '+l.st+'–'+l.en+' · ауд. '+(l.room||'—');
+ $x('focusBar').style.width=running?Math.max(0,Math.min(100,100*(now-l.begin)/(l.finish-l.begin)))+'%':'0%';
 }
 const oldRender=render;render=function(){oldRender();tick()};
 const oldChangeMode=changeMode;changeMode=function(x){oldChangeMode(x);tick()};
 activeDate=toMonday(todayISO());
-const originalLoad=load; // Existing load already starts on page initialization; redraw after it finishes.
+// Existing load starts on initialization; redraw when data is ready.
 const init=setInterval(()=>{if(typeof data==='object'&&data&&Object.keys(data).length){clearInterval(init);render();historyDraw();tick()}},100);
 setInterval(tick,1000);
 })();
