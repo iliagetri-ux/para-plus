@@ -90,6 +90,19 @@ body.light .weekCalendar{background:#fff}
 #days .day.collapsed .empty,#teacherDays .day.collapsed .empty{display:block}
 .day .dayhead{user-select:none}
 @media(prefers-reduced-motion:reduce){#days .day .dayContent,#teacherDays .day .dayContent{transition:none!important}}
+</style><style>
+/* Compact, readable week navigation on narrow phones */
+.sideMenu .editbar{min-width:0;overflow:hidden;padding:10px 8px}
+.weekPicker{min-width:0;gap:5px!important;width:100%}
+.weekPicker .weekArrow{flex:0 0 36px!important;width:36px!important;min-width:36px!important;min-height:42px;padding:6px!important;font-size:19px}
+.weekPicker .weekLabel{min-width:0!important;flex:1 1 0!important;width:0;max-width:100%;padding:8px 3px!important;min-height:42px;font-size:clamp(11px,3.2vw,14px);line-height:1.2;white-space:nowrap;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis}
+.weekCalendar{min-width:0;width:100%;padding:8px!important}
+.weekCalTop{gap:4px}
+.weekCalTop strong{font-size:13px;text-align:center;min-width:0}
+.weekCalTop button{min-width:35px;padding:7px}
+.weekCalGrid{gap:1px!important}
+.weekCalGrid .weekDay{font-size:11px;padding:6px 0!important}
+@media(max-width:375px){.weekPicker .weekArrow{flex-basis:32px!important;width:32px!important;min-width:32px!important}.weekPicker .weekLabel{font-size:11px!important}}
 </style></head><body><main><header><div style="display:flex;align-items:center;gap:12px"><button id="menuToggle" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="sideMenu" style="font-size:22px;padding:7px 12px">☰</button><div class="logo">Пара<span style="color:#6e9bff">+</span></div></div></header><div id="menuBackdrop" class="menuBackdrop" hidden></div><aside id="sideMenu" class="sideMenu" aria-label="Боковое меню" aria-hidden="true"><div class="menuHeader"><strong>Настройки «Пара+»</strong><button id="menuClose" type="button" aria-label="Закрыть меню">✕</button></div><div id="menuGroupRow"><label for="group" style="display:block;margin:18px 0 7px">Моя группа</label><select id="group" aria-label="Группа" style="width:100%"></select><p class="note">Выбор сохраняется на этом устройстве.</p></div><div id="menuPreferences"><h3>Оформление</h3><label>Основной цвет</label><div class="colorGrid" id="colorGrid"></div><label for="themeChoice">Тема</label><select id="themeChoice"><option value="dark">Тёмная</option><option value="light">Светлая</option></select><label for="colorIntensity">Насыщенность</label><select id="colorIntensity"><option value="soft">Мягкая</option><option value="balanced">Обычная</option><option value="vivid">Яркая</option></select></div></aside><div id="studentIntro"><h1>Твоё расписание.<br>Без лишнего.</h1><p class="muted">Моя учебная неделя · Понедельник — пятница</p></div><section class="modeNav" id="modeNav"><button id="studentMode" class="active">🎓 Студентам</button><button id="teacherMode">👩‍🏫 Преподавателям</button><button id="adminMode">⚙️ Администратор</button></section>
 <section id="adminArea" class="hiddenMode" aria-label="Кабинет администратора"><h2>Администратор</h2><div class="adminBlank" aria-label="Пока пусто"></div></section>
 <section id="teacherArea" class="hiddenMode">
@@ -413,7 +426,7 @@ setInterval(focusWeek,30000);setTimeout(focusWeek,350);
  const at=s=>new Date(s+'T12:00:00');
  const shift=(s,n)=>{const d=at(s);d.setDate(d.getDate()+n);return iso(d)};
  const mondayDate=s=>{const d=at(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d)};
- const title=s=>{const from=at(mondayDate(s)),to=at(shift(mondayDate(s),6));return from.getDate()+' '+fmt.format(from)+' — '+to.getDate()+' '+fmt.format(to)};
+ const title=s=>{const from=at(mondayDate(s)),to=at(shift(mondayDate(s),6));return from.getMonth()===to.getMonth()?from.getDate()+'–'+to.getDate()+' '+fmt.format(to):from.getDate()+' '+fmt.format(from)+' – '+to.getDate()+' '+fmt.format(to)};
  const selection=[['date','prev','next'],['teacherDate','teacherPrev','teacherNext']];
  for(const [dateId,prevId,nextId] of selection){
   const input=get(dateId),previous=get(prevId),next=get(nextId);if(!input||!previous||!next)continue;
