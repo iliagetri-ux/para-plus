@@ -509,38 +509,64 @@ setInterval(focusWeek,30000);setTimeout(focusWeek,350);
 </script><script>
 (function(){
 const g=id=>document.getElementById(id);
-const key='para_plus_admin_demo_session';
-function showAdmin(){const logged=localStorage.getItem(key)==='yes';g('adminLoginBox').classList.toggle('hiddenMode',logged);g('adminDashboard').classList.toggle('hiddenMode',!logged)}
-g('adminEnter').addEventListener('click',()=>{
- if(g('adminCode').value==='4444'){localStorage.setItem(key,'yes');g('adminError').textContent='';g('adminCode').value='';showAdmin()}
- else g('adminError').textContent='Неверный код';
-});
-g('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')g('adminEnter').click()});
-g('adminLogout').addEventListener('click',()=>{localStorage.removeItem(key);showAdmin()});
+const projectUrl='https://dmvvezrgaanenwccvhai.supabase.co';
+const publishable='sb_publishable_7-Jl9UbpSvcMuzYOrHoDXA_mvA4uJoR';
+const sessionKey='para_plus_supabase_admin_session_v1';
+let session=null,role=null;
+try{session=JSON.parse(localStorage.getItem(sessionKey)||'null')}catch{}
+const headers=extra=>({apikey:publishable,...extra});
+function store(next){session=next||null;if(session)localStorage.setItem(sessionKey,JSON.stringify(session));else localStorage.removeItem(sessionKey)}
+async function refresh(){
+ if(!session?.refresh_token)return null;
+ const r=await fetch(projectUrl+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:headers({'Content-Type':'application/json'}),body:JSON.stringify({refresh_token:session.refresh_token})});
+ if(!r.ok){store(null);return null}store(await r.json());return session;
+}
+async function current(){
+ if(!session)return null;
+ if(Number(session.expires_at||0)*1000<Date.now()+60000)return refresh();
+ return session;
+}
+async function readRole(){
+ const active=await current();if(!active){role=null;return null}
+ const r=await fetch(projectUrl+'/rest/v1/app_admins?select=role&limit=1',{headers:headers({Authorization:'Bearer '+active.access_token})});
+ if(!r.ok){role=null;return null}const rows=await r.json();role=rows[0]?.role||null;return role;
+}
+function paint(){const logged=Boolean(role);g('adminLoginBox').classList.toggle('hiddenMode',logged);g('adminDashboard').classList.toggle('hiddenMode',!logged);if(logged){g('adminDashboard').querySelector('h2').textContent=role==='super_admin'?'Главный администратор':'Администратор';window.ParaPlusNews?.refreshAdmin()}}
+async function showAdmin(){await readRole();paint()}
+async function login(){
+ const email=g('adminCode').value.trim(),password=g('adminPassword')?.value||'';
+ g('adminError').textContent='';
+ if(!email||!password){g('adminError').textContent='Введите email и пароль';return}
+ g('adminEnter').disabled=true;
+ try{
+  const r=await fetch(projectUrl+'/auth/v1/token?grant_type=password',{method:'POST',headers:headers({'Content-Type':'application/json'}),body:JSON.stringify({email,password})});
+  if(!r.ok)throw new Error('Неверный email или пароль');store(await r.json());await readRole();
+  if(!role){store(null);throw new Error('Для этой учётной записи не назначены права администратора')}
+  g('adminCode').value='';g('adminPassword').value='';paint();
+ }catch(err){g('adminError').textContent=err.message||'Не удалось выполнить вход'}finally{g('adminEnter').disabled=false}
+}
+g('adminLoginBox').querySelector('label[for=adminCode]').textContent='Email администратора';
+g('adminCode').type='email';g('adminCode').inputMode='email';g('adminCode').autocomplete='email';g('adminCode').placeholder='Email администратора';
+const password=document.createElement('input');password.id='adminPassword';password.type='password';password.autocomplete='current-password';password.placeholder='Пароль';password.setAttribute('aria-label','Пароль администратора');g('adminCode').after(password);
+g('adminEnter').textContent='Войти по email';
+g('adminLoginBox').querySelector('.note').textContent='Вход защищён Supabase Auth. Доступ к публикации проверяется сервером.';
+g('adminEnter').addEventListener('click',login);
+g('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')login()});password.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+g('adminLogout').addEventListener('click',async()=>{const active=await current();if(active)fetch(projectUrl+'/auth/v1/logout',{method:'POST',headers:headers({Authorization:'Bearer '+active.access_token})}).catch(()=>{});store(null);role=null;paint()});
+window.ParaPlusAuth={current,readRole,isAdmin:()=>Boolean(role),role:()=>role,headers};
 g('closeNewsPage').addEventListener('click',()=>g('newsFullPage').classList.add('hiddenMode'));
-showAdmin();
+showAdmin().catch(()=>paint());
 })();
 </script><script>
 (function(){
 const e=id=>document.getElementById(id),safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const read=(k,fallback=[])=>{try{return JSON.parse(localStorage.getItem(k)||'null')||fallback}catch{return fallback}};
 const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{alert('Недостаточно места для сохранения');return false}};
-const keys={news:'para_demo_news_v3',alerts:'para_demo_alerts_v3',subs:'para_demo_subs_v3'};
+const keys={alerts:'para_demo_alerts_v3',subs:'para_demo_subs_v3'};
 const groups=Object.keys(data.numerator?.groups||{}).sort((a,b)=>a.localeCompare(b,'ru'));
 e('adminSubGroup').innerHTML=groups.map(g=>'<option>'+safe(g)+'</option>').join('');
 e('adminGroupsPicker').innerHTML=groups.map(g=>'<label><input type="checkbox" value="'+safe(g)+'"> '+safe(g)+'</label>').join('');
 e('adminAlertScope').onchange=()=>e('adminGroupsPicker').classList.toggle('hiddenMode',e('adminAlertScope').value!=='groups');
-function renderNews(){
- const items=read(keys.news),view=e('newsFullPage').querySelector('.teacherBox');
- const cards=items.map(n=>'<article class="demoNews"><strong>'+safe(n.title)+'</strong><p>'+safe(n.body)+'</p><small>'+new Date(n.created).toLocaleString('ru-RU')+'</small></article>').join('');
- view.innerHTML=cards||'Пока публикаций нет.';
- e('adminNewsList').innerHTML=items.map(n=>'<div class="adminDemoItem"><strong>'+safe(n.title)+'</strong> <button type="button" data-delete-news="'+safe(n.id)+'">Удалить</button></div>').join('');
- const featured=items.find(n=>n.featured);
- if(featured)e('collegeNews').querySelector('.featuredNewsPlaceholder').innerHTML='<div><strong>'+safe(featured.title)+'</strong><p>'+safe(featured.body)+'</p></div>';
- else e('collegeNews').querySelector('.featuredNewsPlaceholder').innerHTML='<span>Здесь будет новость или баннер</span>';
-}
-e('adminNewsForm').onsubmit=ev=>{ev.preventDefault();const f=new FormData(ev.target),items=read(keys.news);items.unshift({id:String(Date.now()),title:f.get('title'),body:f.get('body'),featured:f.has('featured'),created:new Date().toISOString()});if(put(keys.news,items)){ev.target.reset();renderNews()}};
-e('adminNewsList').onclick=ev=>{const id=ev.target.dataset.deleteNews;if(id&&confirm('Удалить новость?')){put(keys.news,read(keys.news).filter(n=>n.id!==id));renderNews()}};
 function relevant(a){return a.scope==='all'||a.scope==='students'||a.scope==='groups'&&a.groups.includes(group)}
 function renderAlerts(){
  const items=read(keys.alerts);
@@ -599,52 +625,107 @@ e('adminApplySubs').onclick=()=>{
  if(put('para_plus_edits_v2',edits)){put(keys.subs,[]);renderSubs();if(typeof render==='function')render();alert('Применено локально: '+applied+'. На других устройствах изменений нет.')}
 };
 e('adminSubForm').elements.date.value=new Date().toLocaleDateString('en-CA');
-renderNews();renderAlerts();renderSubs();
+renderAlerts();renderSubs();
 const groupSelector=e('group');groupSelector.addEventListener('change',renderAlerts);
 })();
 </script><script>
-/* Public, read-only Supabase news feed. Never put secret/service-role keys in browser code. */
+/* News is public to read; every mutation below carries a Supabase Auth token.
+   The database RLS policies, not this UI, decide whether it is allowed. */
 (function(){
- const endpoint='https://dmvvezrgaanenwccvhai.supabase.co/rest/v1/news?select=id,title,content,featured,created_at&order=created_at.desc&limit=50';
+ const projectUrl='https://dmvvezrgaanenwccvhai.supabase.co';
  const publishable='sb_publishable_7-Jl9UbpSvcMuzYOrHoDXA_mvA4uJoR';
- let lastRemote=[];
- const escText=x=>String(x??'');
+ const fields='id,title,content,featured,created_at,image_url';
+ let items=[],editingId=null;
+ const byId=id=>document.getElementById(id);
+ const apiHeaders=extra=>({apikey:publishable,...extra});
+ function displayDate(value){const d=new Date(value);return Number.isNaN(d.getTime())?'':d.toLocaleString('ru-RU')}
+ function makeArticle(item){
+  const article=document.createElement('article');article.className='demoNews';
+  const title=document.createElement('strong');title.textContent=String(item.title||'');
+  const body=document.createElement('p');body.textContent=String(item.content||'');
+  const stamp=document.createElement('small');stamp.textContent=displayDate(item.created_at);
+  article.append(title,body);
+  if(item.image_url){const image=document.createElement('img');image.src=item.image_url;image.alt='Изображение к новости: '+String(item.title||'');image.loading='lazy';image.style.cssText='display:block;max-width:100%;max-height:320px;object-fit:contain;border-radius:10px;margin:10px 0';article.append(image)}
+  article.append(stamp);return article;
+ }
  function paint(){
-   const page=document.getElementById('newsFullPage');
-   const host=page?.querySelector('.teacherBox');
-   if(!host)return;
-   let remote=document.getElementById('supabaseNews');
-   if(!remote){remote=document.createElement('section');remote.id='supabaseNews';host.prepend(remote)}
-   remote.replaceChildren();
-   if(lastRemote.length){
-     for(const node of [...host.childNodes])if(node.nodeType===Node.TEXT_NODE&&node.textContent.trim()==='Пока публикаций нет.')node.remove();
-     const heading=document.createElement('h3');heading.textContent='Новости колледжа';remote.append(heading);
-     for(const item of lastRemote){
-       const article=document.createElement('article');article.className='demoNews';
-       const title=document.createElement('strong');title.textContent=escText(item.title);
-       const body=document.createElement('p');body.textContent=escText(item.content);
-       const stamp=document.createElement('small');const d=new Date(item.created_at);stamp.textContent=Number.isNaN(d.getTime())?'':d.toLocaleString('ru-RU');
-       article.append(title,body,stamp);remote.append(article);
-     }
-   }
-   const featured=lastRemote.find(n=>n.featured);
-   if(featured){
-     const box=document.querySelector('#collegeNews .featuredNewsPlaceholder');
-     if(box){box.replaceChildren();const title=document.createElement('strong');title.textContent=escText(featured.title);const p=document.createElement('p');p.textContent=escText(featured.content);box.append(title,p)}
-   }
+  const host=byId('newsFullPage')?.querySelector('.teacherBox');if(!host)return;
+  let remote=byId('supabaseNews');if(!remote){remote=document.createElement('section');remote.id='supabaseNews';host.prepend(remote)}
+  remote.replaceChildren();
+  if(items.length){
+   for(const node of [...host.childNodes])if(node.nodeType===Node.TEXT_NODE&&node.textContent.trim()==='Пока публикаций нет.')node.remove();
+   const heading=document.createElement('h3');heading.textContent='Новости колледжа';remote.append(heading);
+   items.forEach(item=>remote.append(makeArticle(item)));
+  }
+  const featured=items.find(item=>item.featured),box=document.querySelector('#collegeNews .featuredNewsPlaceholder');
+  if(box&&featured){box.replaceChildren();const article=makeArticle(featured);box.append(...article.childNodes)}
+  renderAdmin();
  }
+ function renderAdmin(){
+  const list=byId('adminNewsList');if(!list)return;list.replaceChildren();
+  if(!window.ParaPlusAuth?.isAdmin())return;
+  for(const item of items){
+   const row=document.createElement('div');row.className='adminDemoItem';
+   const title=document.createElement('strong');title.textContent=item.title+(item.featured?' · закреплена':'');
+   const edit=document.createElement('button');edit.type='button';edit.textContent='Изменить';edit.dataset.editNews=item.id;
+   row.append(title,edit);
+   if(window.ParaPlusAuth?.role()==='super_admin'){const remove=document.createElement('button');remove.type='button';remove.textContent='Удалить';remove.dataset.deleteNews=item.id;row.append(remove)}
+   list.append(row);
+  }
+ }
+ async function responseError(response){let text='';try{const body=await response.json();text=body.message||body.error||body.hint||''}catch{}return text||('HTTP '+response.status)}
  async function sync(){
-   try{
-     const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),10000);
-     let response;try{response=await fetch(endpoint,{headers:{apikey:publishable},cache:'no-store',signal:controller.signal})}finally{clearTimeout(timeout)}
-     if(!response.ok)throw new Error('News API HTTP '+response.status);
-     const rows=await response.json();
-     if(!Array.isArray(rows))throw new Error('Unexpected news format');
-     lastRemote=rows;paint();
-   }catch(err){console.warn('Не удалось загрузить новости Supabase:',err)}
+  const endpoint=projectUrl+'/rest/v1/news?select='+encodeURIComponent(fields)+'&order=created_at.desc&limit=50';
+  try{
+   let response=await fetch(endpoint,{headers:apiHeaders(),cache:'no-store'});
+   if(!response.ok&&response.status===400){response=await fetch(projectUrl+'/rest/v1/news?select=id,title,content,featured,created_at&order=created_at.desc&limit=50',{headers:apiHeaders(),cache:'no-store'})}
+   if(!response.ok)throw new Error(await responseError(response));
+   items=await response.json();paint();
+  }catch(err){console.warn('Не удалось загрузить новости Supabase:',err)}
  }
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
- window.addEventListener('pageshow',sync);
- sync();
+ async function token(){const active=await window.ParaPlusAuth?.current();if(!active||!window.ParaPlusAuth?.isAdmin())throw new Error('Войдите как администратор с правами публикации');return active.access_token}
+ function publicObjectUrl(path){return projectUrl+'/storage/v1/object/public/news-images/'+path}
+ async function uploadImage(file,accessToken){
+  if(!file)return null;
+  if(!/^image\/(jpeg|png|webp|gif)$/.test(file.type)||file.size>5*1024*1024)throw new Error('Допустимы JPG, PNG, WebP или GIF до 5 МБ');
+  const extension={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type];
+  const path='news/'+crypto.randomUUID()+'.'+extension;
+  const response=await fetch(projectUrl+'/storage/v1/object/news-images/'+path,{method:'POST',headers:apiHeaders({Authorization:'Bearer '+accessToken,'Content-Type':file.type,'x-upsert':'false'}),body:file});
+  if(!response.ok)throw new Error('Не удалось загрузить изображение: '+await responseError(response));
+  return publicObjectUrl(path);
+ }
+ async function removeImage(url,accessToken){
+  if(window.ParaPlusAuth?.role()!=='super_admin')return;
+  const prefix=publicObjectUrl('');if(!url?.startsWith(prefix))return;
+  const path=url.slice(prefix.length);
+  await fetch(projectUrl+'/storage/v1/object/news-images/'+path,{method:'DELETE',headers:apiHeaders({Authorization:'Bearer '+accessToken})});
+ }
+ const form=byId('adminNewsForm'),titleInput=form.elements.title,bodyInput=form.elements.body,featuredInput=form.elements.featured;
+ const imageLabel=document.createElement('label');imageLabel.textContent='Изображение (необязательно, JPG/PNG/WebP/GIF до 5 МБ)';
+ const imageInput=document.createElement('input');imageInput.type='file';imageInput.name='image';imageInput.accept='image/jpeg,image/png,image/webp,image/gif';imageLabel.append(imageInput);featuredInput.closest('label').before(imageLabel);
+ const submit=form.querySelector('button[type=submit]');submit.textContent='Опубликовать';
+ const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Отменить редактирование';cancel.hidden=true;submit.after(cancel);
+ function resetForm(){editingId=null;form.reset();submit.textContent='Опубликовать';cancel.hidden=true}
+ cancel.onclick=resetForm;
+ form.onsubmit=async event=>{
+  event.preventDefault();submit.disabled=true;
+  try{
+   const accessToken=await token(),old=items.find(item=>String(item.id)===String(editingId));
+   const imageUrl=imageInput.files[0]?await uploadImage(imageInput.files[0],accessToken):(old?.image_url||null);
+   const payload={title:titleInput.value.trim(),content:bodyInput.value.trim(),featured:featuredInput.checked,image_url:imageUrl};
+   const url=editingId?projectUrl+'/rest/v1/news?id=eq.'+encodeURIComponent(editingId):projectUrl+'/rest/v1/news';
+   const response=await fetch(url,{method:editingId?'PATCH':'POST',headers:apiHeaders({Authorization:'Bearer '+accessToken,'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify(payload)});
+   if(!response.ok)throw new Error('Не удалось сохранить новость: '+await responseError(response));
+   if(old?.image_url&&imageUrl!==old.image_url)removeImage(old.image_url,accessToken);resetForm();await sync();
+  }catch(err){alert(err.message||'Не удалось сохранить новость')}finally{submit.disabled=false}
+ };
+ byId('adminNewsList').onclick=async event=>{
+  const id=event.target.dataset.editNews||event.target.dataset.deleteNews;if(!id)return;const item=items.find(row=>String(row.id)===String(id));if(!item)return;
+  if(event.target.dataset.editNews){editingId=item.id;titleInput.value=item.title||'';bodyInput.value=item.content||'';featuredInput.checked=Boolean(item.featured);submit.textContent='Сохранить изменения';cancel.hidden=false;form.scrollIntoView({behavior:'smooth',block:'center'});return}
+  if(!confirm('Удалить новость?'))return;
+  try{const accessToken=await token();const response=await fetch(projectUrl+'/rest/v1/news?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:apiHeaders({Authorization:'Bearer '+accessToken})});if(!response.ok)throw new Error(await responseError(response));await removeImage(item.image_url,accessToken);if(String(editingId)===String(id))resetForm();await sync()}catch(err){alert('Не удалось удалить новость: '+(err.message||''))}
+ };
+ window.ParaPlusNews={sync,refreshAdmin:renderAdmin};
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});window.addEventListener('pageshow',sync);sync();if(window.ParaPlusAuth?.isAdmin())renderAdmin();
 })();
 </script></body></html>
