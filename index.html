@@ -327,12 +327,23 @@ function focusWeek(){
  const mondayISO=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
  const sameWeek=mondayOfView && (function(){const d=new Date(mondayOfView+'T12:00:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')===mondayISO})();
  let focus=sameWeek&&weekday<5?weekday:0;
- if(sameWeek&&weekday<5){
-   const current=rows[weekday],times=[...current.querySelectorAll('.times,.lesson .detail')].map(e=>e.textContent);
-   const parse=t=>{const m=String(t).match(/(\d{1,2}):(\d{2})[–-](\d{1,2}):(\d{2})/);return m?(+m[3])*60+(+m[4]):null};
-   const endings=times.map(parse).filter(x=>x!==null);
+ const parseEnd=text=>{const m=String(text).match(/(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})/);return m?Number(m[3])*60+Number(m[4]):null};
+ const lessonEnds=row=>{
+   const cards=[...row.querySelectorAll(isTeacher?'.teacherLesson':'.lesson')];
+   return cards.filter(card=>!card.querySelector('.cancelled')).map(card=>{
+     const label=isTeacher?card.querySelector('.times')?.textContent:[...card.querySelectorAll('.detail')].map(x=>x.textContent).join(' ');
+     return parseEnd(label);
+   }).filter(n=>Number.isFinite(n));
+ };
+ const hasLessons=index=>index>=0&&index<rows.length&&lessonEnds(rows[index]).length>0;
+ if(sameWeek){
    const minutes=now.getHours()*60+now.getMinutes();
-   if(endings.length && endings.every(end=>end<=minutes))focus=weekday+1<5?weekday+1:0;
+   const finished=weekday>=5||!hasLessons(weekday)||lessonEnds(rows[weekday]).every(end=>end<=minutes);
+   if(finished){
+     focus=-1;
+     for(let i=Math.min(weekday+1,5);i<rows.length;i++){if(hasLessons(i)){focus=i;break}}
+     if(focus<0)focus=weekday<5?weekday:0;
+   }
  }
  rows.forEach((el,i)=>{el.classList.toggle('focusDay',i===focus);if(!el.dataset.userOpened)el.classList.toggle('collapsed',i!==focus);
    if(!el.dataset.toggleBound){el.dataset.toggleBound='1';el.querySelector('.dayhead')?.addEventListener('click',()=>{el.dataset.userOpened='1';el.classList.toggle('collapsed')})}
