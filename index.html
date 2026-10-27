@@ -85,8 +85,8 @@ function drawTeacher(){
 function teacherLiveTimer(){
  const box=q('teacherFocus');if(!box)return;
  if(!teacherSession||mode!=='teacher'){box.style.display='none';return}box.style.display='';
- const now=new Date(), all=changes();let next=null;
- const timeValid=t=>/^([01]?\\d|2[0-3]):[0-5]\\d$/.test(String(t||''));
+ const now=new Date(), all=changes();let next=null; const activeTeacher=selected;
+ const timeValid=t=>/^([01]?\d|2[0-3]):[0-5]\d$/.test(String(t||''));
  const at=(iso,t)=>{let d=new Date(iso+'T12:00:00'),[h,m]=t.split(':').map(Number);d.setHours(h,m,0,0);return d};
  const isoDay=offset=>{let d=new Date();d.setDate(d.getDate()+offset);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
  for(let offset=0;offset<28&&!next;offset++){
@@ -95,7 +95,7 @@ function teacherLiveTimer(){
   const candidates=[];
   for(const [grp,days] of Object.entries(data[week]?.groups||{}))for(const lesson of days[dayNames[dayIdx]]?.lessons||[]){
    const override=all[[grp,date,lesson.pair].join('::')]||{},actual={...lesson,...override};
-   if(actual.cancelled||!(splitTeacherMatch(lesson.teacher,selected)||splitTeacherMatch(actual.teacher,selected)))continue;
+   if(actual.cancelled||!(splitTeacherMatch(lesson.teacher,activeTeacher)||splitTeacherMatch(actual.teacher,activeTeacher)))continue;
    const start=actual.timeStart||startTime(lesson.pair),end=actual.timeEnd||endTime(start);
    if(!timeValid(start)||!timeValid(end))continue;
    const begin=at(date,start),finish=at(date,end);if(finish<=begin||finish<=now)continue;
@@ -113,7 +113,8 @@ function teacherLiveTimer(){
  q('teacherFocusDesc').textContent=(next.running?'До окончания · ':'До начала · ')+dayLabel+', '+next.start+'–'+next.end+' · '+next.grp+' · ауд. '+(next.room||'—');
  q('teacherFocusBar').style.width=next.running?Math.max(0,Math.min(100,100*(now-next.begin)/(next.finish-next.begin)))+'%':'0%';
 }
-setInterval(teacherLiveTimer,1000);
+document.addEventListener('para:teacher-tick',teacherLiveTimer);
+setInterval(()=>{try{teacherLiveTimer()}catch(e){console.warn('Таймер преподавателя:',e)}},1000);
 q('studentMode').onclick=()=>changeMode('student');q('teacherMode').onclick=()=>changeMode('teacher');q('teacherEnter').onclick=teacherAuth;q('teacherCode').onkeydown=e=>{if(e.key==='Enter')teacherAuth()};q('teacherSelect').onchange=e=>{selected=e.target.value;safeSet('para_teacher_selected',selected)};q('teacherLogout').onclick=logOut;q('teacherSwitch').onclick=logOut;q('teacherPrev').onclick=()=>{q('teacherDate').value=addDays(monday(q('teacherDate').value),-7);drawTeacher()};q('teacherNext').onclick=()=>{q('teacherDate').value=addDays(monday(q('teacherDate').value),7);drawTeacher()};q('teacherDate').onchange=drawTeacher;q('teacherNum').onclick=()=>teacherWeekDate('numerator');q('teacherDen').onclick=()=>teacherWeekDate('denominator');
 q('teacherDate').value=activeDate;
 const oldLoad=load; // the original loader already runs asynchronously; wait for imported data to be ready
@@ -182,7 +183,11 @@ const oldRender=render;render=function(){oldRender();tick()};
 document.getElementById('studentMode').addEventListener('click',tick);document.getElementById('teacherMode').addEventListener('click',tick);
 activeDate=toMonday(todayISO());
 // Existing load starts on initialization; redraw when data is ready.
-const init=setInterval(()=>{if(typeof data==='object'&&data&&Object.keys(data).length){clearInterval(init);render();historyDraw();tick()}},100);
-setInterval(tick,1000);
+const refreshLiveTimers=()=>{try{tick()}catch(e){console.warn('Таймер студента:',e)}try{teacherLiveBridge()}catch(e){console.warn('Таймер преподавателя:',e)}};
+function teacherLiveBridge(){const teacherArea=document.getElementById('teacherArea');if(teacherArea && !teacherArea.classList.contains('hiddenMode')){document.dispatchEvent(new Event('para:teacher-tick'))}}
+const init=setInterval(()=>{if(typeof data==='object'&&data&&data.numerator&&data.denominator){clearInterval(init);try{render()}catch(e){console.warn(e)}refreshLiveTimers()}},100);
+window.addEventListener('pageshow',refreshLiveTimers);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshLiveTimers()});
+setInterval(refreshLiveTimers,1000);
 })();
 </script></body></html>
