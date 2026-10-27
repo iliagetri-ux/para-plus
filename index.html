@@ -65,6 +65,19 @@ body.teacher-view #teacherLoginTitle{font-size:23px}
 .collegeNews h2{font-size:22px;margin:0 0 12px}.newsEmpty{padding:22px;background:#211e27;color:#a9a0b5;border-radius:16px}
 body.light .adminBlank,body.light .newsEmpty{background:#fff;border-color:#dce4f1}
 #sideNewsMenu{margin:16px 0}#sideNewsMenu button:disabled{opacity:.55;cursor:not-allowed}
+</style><style>
+.weekPicker{width:100%;display:flex;align-items:center;gap:7px;margin:8px 0 12px}
+.weekPicker .weekLabel{flex:1;min-width:0;text-align:center;font-weight:750;color:var(--accent,#a58bfa);background:var(--accent-soft,#28203e);border:1px solid var(--accent-line,#48375e)}
+.weekPicker .weekArrow{width:43px;flex-shrink:0}
+.weekCalendar{background:#211e27;border:1px solid #51435f;border-radius:15px;padding:12px;margin-bottom:12px}
+.weekCalendar[hidden]{display:none!important}
+.weekCalTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.weekCalGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.weekCalGrid .dayName{text-align:center;color:#a99fb5;font-size:11px;padding:7px 0}
+.weekCalGrid .weekDay{font-size:12px;padding:9px 0;min-width:0;min-height:36px;border:0;background:transparent;border-radius:8px}
+.weekCalGrid .weekDay.activeWeek{background:var(--accent-deep,#6d4dd3);color:white}
+.weekCalGrid .weekDay.outside{opacity:.48}
+body.light .weekCalendar{background:#fff}
 </style></head><body><main><header><div style="display:flex;align-items:center;gap:12px"><button id="menuToggle" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="sideMenu" style="font-size:22px;padding:7px 12px">☰</button><div class="logo">Пара<span style="color:#6e9bff">+</span></div></div></header><div id="menuBackdrop" class="menuBackdrop" hidden></div><aside id="sideMenu" class="sideMenu" aria-label="Боковое меню" aria-hidden="true"><div class="menuHeader"><strong>Настройки «Пара+»</strong><button id="menuClose" type="button" aria-label="Закрыть меню">✕</button></div><div id="menuGroupRow"><label for="group" style="display:block;margin:18px 0 7px">Моя группа</label><select id="group" aria-label="Группа" style="width:100%"></select><p class="note">Выбор сохраняется на этом устройстве.</p></div><div id="menuPreferences"><h3>Оформление</h3><label>Основной цвет</label><div class="colorGrid" id="colorGrid"></div><label for="themeChoice">Тема</label><select id="themeChoice"><option value="dark">Тёмная</option><option value="light">Светлая</option></select><label for="colorIntensity">Насыщенность</label><select id="colorIntensity"><option value="soft">Мягкая</option><option value="balanced">Обычная</option><option value="vivid">Яркая</option></select></div></aside><div id="studentIntro"><h1>Твоё расписание.<br>Без лишнего.</h1><p class="muted">Моя учебная неделя · Понедельник — пятница</p></div><section class="modeNav" id="modeNav"><button id="studentMode" class="active">🎓 Студентам</button><button id="teacherMode">👩‍🏫 Преподавателям</button><button id="adminMode">⚙️ Администратор</button></section>
 <section id="adminArea" class="hiddenMode" aria-label="Кабинет администратора"><h2>Администратор</h2><div class="adminBlank" aria-label="Пока пусто"></div></section>
 <section id="teacherArea" class="hiddenMode">
@@ -371,5 +384,64 @@ const obs=new MutationObserver(()=>{if(!window.__paraFocusPending){window.__para
 ['days','teacherDays'].forEach(id=>{if($(id))obs.observe($(id),{childList:true})});
 window.addEventListener('pageshow',focusWeek);
 setInterval(focusWeek,30000);setTimeout(focusWeek,350);
+})();
+</script><script>
+(function(){
+ const fmt=new Intl.DateTimeFormat('ru-RU',{month:'short'});
+ const get=id=>document.getElementById(id);
+ const pad=n=>String(n).padStart(2,'0');
+ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+ const at=s=>new Date(s+'T12:00:00');
+ const shift=(s,n)=>{const d=at(s);d.setDate(d.getDate()+n);return iso(d)};
+ const mondayDate=s=>{const d=at(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d)};
+ const title=s=>{const from=at(mondayDate(s)),to=at(shift(mondayDate(s),6));return from.getDate()+' '+fmt.format(from)+' — '+to.getDate()+' '+fmt.format(to)};
+ const selection=[['date','prev','next'],['teacherDate','teacherPrev','teacherNext']];
+ for(const [dateId,prevId,nextId] of selection){
+  const input=get(dateId),previous=get(prevId),next=get(nextId);if(!input||!previous||!next)continue;
+  const host=input.closest('.editbar'),label=host.querySelector('label[for="'+dateId+'"]');
+  if(label)label.style.display='none';
+  input.style.display='none';previous.style.display='none';next.style.display='none';
+  const wrap=document.createElement('div');wrap.className='weekPicker';
+  const left=document.createElement('button');left.className='weekArrow';left.type='button';left.textContent='←';left.setAttribute('aria-label','Предыдущая неделя');
+  const choose=document.createElement('button');choose.className='weekLabel';choose.type='button';choose.setAttribute('aria-expanded','false');
+  const right=document.createElement('button');right.className='weekArrow';right.type='button';right.textContent='→';right.setAttribute('aria-label','Следующая неделя');
+  wrap.append(left,choose,right);host.prepend(wrap);
+  const calendar=document.createElement('div');calendar.className='weekCalendar';calendar.hidden=true;host.insertBefore(calendar,wrap.nextSibling);
+  let viewed=null;
+  const sync=()=>{if(input.value)choose.textContent=title(input.value)};
+  left.onclick=()=>{previous.click();sync();if(!calendar.hidden)draw()};
+  right.onclick=()=>{next.click();sync();if(!calendar.hidden)draw()};
+  const selectWeek=s=>{input.value=mondayDate(s);input.dispatchEvent(new Event('change',{bubbles:true}));sync();calendar.hidden=true;choose.setAttribute('aria-expanded','false')};
+  function draw(){
+   const selected=mondayDate(input.value||iso(new Date())),base=at(viewed||selected);
+   const year=base.getFullYear(),month=base.getMonth(),first=new Date(year,month,1,12),start=mondayDate(iso(first));
+   const end=new Date(year,month+1,0,12),last=shift(mondayDate(iso(end)),6);
+   const header=document.createElement('div');header.className='weekCalTop';
+   const back=document.createElement('button');back.textContent='←';back.type='button';
+   const label=document.createElement('strong');label.textContent=new Intl.DateTimeFormat('ru-RU',{month:'long',year:'numeric'}).format(base);
+   const forward=document.createElement('button');forward.textContent='→';forward.type='button';
+   back.onclick=()=>{viewed=iso(new Date(year,month-1,1,12));draw()};
+   forward.onclick=()=>{viewed=iso(new Date(year,month+1,1,12));draw()};
+   header.append(back,label,forward);
+   const grid=document.createElement('div');grid.className='weekCalGrid';
+   for(const n of ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']){const e=document.createElement('div');e.className='dayName';e.textContent=n;grid.append(e)}
+   let day=start;
+   while(day<=last){
+     for(let i=0;i<7;i++){
+       const d=at(day),button=document.createElement('button');button.type='button';button.className='weekDay';
+       if(d.getMonth()!==month)button.classList.add('outside');
+       if(mondayDate(day)===selected)button.classList.add('activeWeek');
+       button.textContent=String(d.getDate());button.setAttribute('aria-label','Неделя '+title(day));
+       const val=day;button.onclick=()=>selectWeek(val);grid.append(button);day=shift(day,1);
+     }
+   }
+   calendar.replaceChildren(header,grid);
+  }
+  choose.onclick=()=>{calendar.hidden=!calendar.hidden;choose.setAttribute('aria-expanded',String(!calendar.hidden));if(!calendar.hidden){viewed=input.value;draw()}};
+  input.addEventListener('change',sync);
+  const target=get(dateId==='date'?'days':'teacherDays');
+  if(target)new MutationObserver(sync).observe(target,{childList:true});
+  sync();
+ }
 })();
 </script></body></html>
