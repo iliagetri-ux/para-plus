@@ -602,4 +602,48 @@ e('adminSubForm').elements.date.value=new Date().toLocaleDateString('en-CA');
 renderNews();renderAlerts();renderSubs();
 const groupSelector=e('group');groupSelector.addEventListener('change',renderAlerts);
 })();
+</script><script>
+/* Public, read-only Supabase news feed. Never put secret/service-role keys in browser code. */
+(function(){
+ const endpoint='https://dmvvezrgaanenwccvhai.supabase.co/rest/v1/news?select=id,title,content,featured,created_at&order=created_at.desc&limit=50';
+ const publishable='sb_publishable_7-Jl9UbpSvcMuzYOrHoDXA_mvA4uJoR';
+ let lastRemote=[];
+ const escText=x=>String(x??'');
+ function paint(){
+   const page=document.getElementById('newsFullPage');
+   const host=page?.querySelector('.teacherBox');
+   if(!host)return;
+   let remote=document.getElementById('supabaseNews');
+   if(!remote){remote=document.createElement('section');remote.id='supabaseNews';host.prepend(remote)}
+   remote.replaceChildren();
+   if(lastRemote.length){
+     const heading=document.createElement('h3');heading.textContent='Новости колледжа';remote.append(heading);
+     for(const item of lastRemote){
+       const article=document.createElement('article');article.className='demoNews';
+       const title=document.createElement('strong');title.textContent=escText(item.title);
+       const body=document.createElement('p');body.textContent=escText(item.content);
+       const stamp=document.createElement('small');const d=new Date(item.created_at);stamp.textContent=Number.isNaN(d.getTime())?'':d.toLocaleString('ru-RU');
+       article.append(title,body,stamp);remote.append(article);
+     }
+   }
+   const featured=lastRemote.find(n=>n.featured);
+   if(featured){
+     const box=document.querySelector('#collegeNews .featuredNewsPlaceholder');
+     if(box){box.replaceChildren();const title=document.createElement('strong');title.textContent=escText(featured.title);const p=document.createElement('p');p.textContent=escText(featured.content);box.append(title,p)}
+   }
+ }
+ async function sync(){
+   try{
+     const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),10000);
+     let response;try{response=await fetch(endpoint,{headers:{apikey:publishable},cache:'no-store',signal:controller.signal})}finally{clearTimeout(timeout)}
+     if(!response.ok)throw new Error('News API HTTP '+response.status);
+     const rows=await response.json();
+     if(!Array.isArray(rows))throw new Error('Unexpected news format');
+     lastRemote=rows;paint();
+   }catch(err){console.warn('Не удалось загрузить новости Supabase:',err)}
+ }
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+ window.addEventListener('pageshow',sync);
+ sync();
+})();
 </script></body></html>
