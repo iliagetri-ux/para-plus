@@ -570,7 +570,7 @@ function renderAttachments(){
 }
 e('adminPhoto').onchange=ev=>{
  const files=[...ev.target.files];
- const allowed=f=>f.type.startsWith('image/')||/\\.(pdf|xlsx|xls|csv|doc|docx)$/i.test(f.name);
+ const allowed=f=>f.type.startsWith('image/')||/\.(pdf|xlsx|xls|csv|doc|docx)$/i.test(f.name);
  attachedFiles.push(...files.filter(allowed));ev.target.value='';renderAttachments();
  if(files.some(f=>!allowed(f)))alert('Некоторые форматы файлов не поддерживаются');
 };
