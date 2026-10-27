@@ -617,6 +617,7 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    if(!remote){remote=document.createElement('section');remote.id='supabaseNews';host.prepend(remote)}
    remote.replaceChildren();
    if(lastRemote.length){
+     for(const node of [...host.childNodes])if(node.nodeType===Node.TEXT_NODE&&node.textContent.trim()==='Пока публикаций нет.')node.remove();
      const heading=document.createElement('h3');heading.textContent='Новости колледжа';remote.append(heading);
      for(const item of lastRemote){
        const article=document.createElement('article');article.className='demoNews';
