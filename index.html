@@ -512,10 +512,15 @@ const g=id=>document.getElementById(id);
 const projectUrl='https://dmvvezrgaanenwccvhai.supabase.co';
 const publishable='sb_publishable_7-Jl9UbpSvcMuzYOrHoDXA_mvA4uJoR';
 const sessionKey='para_plus_supabase_admin_session_v1';
-let session=null,role=null;
+let session=null,role=null,recoveryMode=false;
 try{session=JSON.parse(localStorage.getItem(sessionKey)||'null')}catch{}
 const headers=extra=>({apikey:publishable,...extra});
 function store(next){session=next||null;if(session)localStorage.setItem(sessionKey,JSON.stringify(session));else localStorage.removeItem(sessionKey)}
+const recoveryParams=new URLSearchParams(location.hash.startsWith('#')?location.hash.slice(1):'');
+if(recoveryParams.get('type')==='recovery'&&recoveryParams.get('access_token')){
+ recoveryMode=true;store({access_token:recoveryParams.get('access_token'),refresh_token:recoveryParams.get('refresh_token')||'',token_type:recoveryParams.get('token_type')||'bearer',expires_in:Number(recoveryParams.get('expires_in')||3600),expires_at:Math.floor(Date.now()/1000)+Number(recoveryParams.get('expires_in')||3600)});
+ history.replaceState(null,'',location.pathname+location.search);
+}
 async function refresh(){
  if(!session?.refresh_token)return null;
  const r=await fetch(projectUrl+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:headers({'Content-Type':'application/json'}),body:JSON.stringify({refresh_token:session.refresh_token})});
@@ -531,8 +536,8 @@ async function readRole(){
  const r=await fetch(projectUrl+'/rest/v1/app_admins?select=role&limit=1',{headers:headers({Authorization:'Bearer '+active.access_token})});
  if(!r.ok){role=null;return null}const rows=await r.json();role=rows[0]?.role||null;return role;
 }
-function paint(){const logged=Boolean(role);g('adminLoginBox').classList.toggle('hiddenMode',logged);g('adminDashboard').classList.toggle('hiddenMode',!logged);if(logged){g('adminDashboard').querySelector('h2').textContent=role==='super_admin'?'Главный администратор':'Администратор';window.ParaPlusNews?.refreshAdmin()}}
-async function showAdmin(){await readRole();paint()}
+function paint(){const logged=Boolean(role)&&!recoveryMode;g('adminLoginBox').classList.toggle('hiddenMode',logged);g('adminDashboard').classList.toggle('hiddenMode',!logged);if(logged){g('adminDashboard').querySelector('h2').textContent=role==='super_admin'?'Главный администратор':'Администратор';window.ParaPlusNews?.refreshAdmin()}}
+async function showAdmin(){if(recoveryMode){paint();setRecoveryView(true);return}await readRole();paint()}
 async function login(){
  const email=g('adminCode').value.trim(),password=g('adminPassword')?.value||'';
  g('adminError').textContent='';
@@ -548,10 +553,32 @@ async function login(){
 g('adminLoginBox').querySelector('label[for=adminCode]').textContent='Email администратора';
 g('adminCode').type='email';g('adminCode').inputMode='email';g('adminCode').autocomplete='email';g('adminCode').placeholder='Email администратора';
 const password=document.createElement('input');password.id='adminPassword';password.type='password';password.autocomplete='current-password';password.placeholder='Пароль';password.setAttribute('aria-label','Пароль администратора');g('adminCode').after(password);
-g('adminEnter').textContent='Войти по email';
-g('adminLoginBox').querySelector('.note').textContent='Вход защищён Supabase Auth. Доступ к публикации проверяется сервером.';
-g('adminEnter').addEventListener('click',login);
-g('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')login()});password.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+const confirmPassword=document.createElement('input');confirmPassword.id='adminPasswordConfirm';confirmPassword.type='password';confirmPassword.autocomplete='new-password';confirmPassword.placeholder='Повторите новый пароль';confirmPassword.setAttribute('aria-label','Повторите новый пароль');confirmPassword.hidden=true;password.after(confirmPassword);
+const recoveryButton=document.createElement('button');recoveryButton.type='button';recoveryButton.textContent='Забыли пароль?';g('adminEnter').after(recoveryButton);
+const loginLabel=g('adminLoginBox').querySelector('label[for=adminCode]'),loginNote=g('adminLoginBox').querySelector('.note');
+function setRecoveryView(active){
+ recoveryMode=active;loginLabel.hidden=active;g('adminCode').hidden=active;confirmPassword.hidden=!active;recoveryButton.hidden=active;
+ password.autocomplete=active?'new-password':'current-password';password.placeholder=active?'Новый пароль (минимум 8 символов)':'Пароль';
+ g('adminEnter').textContent=active?'Сохранить новый пароль':'Войти по email';
+ loginNote.textContent=active?'Задайте новый пароль для этого администратора.':'Вход защищён Supabase Auth. Доступ к публикации проверяется сервером.';
+}
+async function sendRecovery(){
+ const email=g('adminCode').value.trim();g('adminError').textContent='';if(!email){g('adminError').textContent='Введите email администратора';return}
+ recoveryButton.disabled=true;
+ try{const r=await fetch(projectUrl+'/auth/v1/recover',{method:'POST',headers:headers({'Content-Type':'application/json'}),body:JSON.stringify({email,redirect_to:location.origin+location.pathname})});if(!r.ok)throw new Error('Не удалось отправить письмо');g('adminError').textContent='Если этот email зарегистрирован, ссылка для смены пароля отправлена.'}catch(err){g('adminError').textContent=err.message||'Не удалось отправить письмо'}finally{recoveryButton.disabled=false}
+}
+async function savePassword(){
+ const active=await current(),next=password.value,repeat=confirmPassword.value;g('adminError').textContent='';
+ if(!active?.access_token){g('adminError').textContent='Ссылка устарела. Запросите новую.';setRecoveryView(false);return}
+ if(next.length<8){g('adminError').textContent='Пароль должен содержать не менее 8 символов';return}
+ if(next!==repeat){g('adminError').textContent='Пароли не совпадают';return}
+ g('adminEnter').disabled=true;
+ try{const r=await fetch(projectUrl+'/auth/v1/user',{method:'PUT',headers:headers({Authorization:'Bearer '+active.access_token,'Content-Type':'application/json'}),body:JSON.stringify({password:next})});if(!r.ok)throw new Error('Не удалось сохранить пароль');store(null);role=null;password.value='';confirmPassword.value='';setRecoveryView(false);g('adminError').textContent='Пароль сохранён. Теперь войдите с email и новым паролем.'}catch(err){g('adminError').textContent=err.message||'Не удалось сохранить пароль'}finally{g('adminEnter').disabled=false}
+}
+setRecoveryView(recoveryMode);
+g('adminEnter').addEventListener('click',()=>recoveryMode?savePassword():login());
+recoveryButton.addEventListener('click',sendRecovery);
+g('adminCode').addEventListener('keydown',e=>{if(e.key==='Enter')recoveryMode?savePassword():login()});password.addEventListener('keydown',e=>{if(e.key==='Enter')recoveryMode?savePassword():login()});confirmPassword.addEventListener('keydown',e=>{if(e.key==='Enter')savePassword()});
 g('adminLogout').addEventListener('click',async()=>{const active=await current();if(active)fetch(projectUrl+'/auth/v1/logout',{method:'POST',headers:headers({Authorization:'Bearer '+active.access_token})}).catch(()=>{});store(null);role=null;paint()});
 window.ParaPlusAuth={current,readRole,isAdmin:()=>Boolean(role),role:()=>role,headers};
 g('closeNewsPage').addEventListener('click',()=>g('newsFullPage').classList.add('hiddenMode'));
