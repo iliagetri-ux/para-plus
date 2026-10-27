@@ -1,4 +1,4 @@
-const CACHE_NAME = "para-plus-v1-6";
+const CACHE_NAME = "para-plus-v2-0";
 
 const FILES = [
   "./",
