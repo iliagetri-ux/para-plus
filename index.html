@@ -173,10 +173,10 @@ window.paraTeacherTick=()=>{try{teacherLiveTimer()}catch(err){console.warn(err)}
 document.addEventListener('para:teacher-tick',teacherLiveTimer);
 setInterval(()=>{try{teacherLiveTimer()}catch(e){console.warn('Таймер преподавателя:',e)}},1000);
 q('studentMode').onclick=()=>changeMode('student');q('teacherMode').onclick=()=>changeMode('teacher');q('teacherEnter').onclick=teacherAuth;q('teacherCode').onkeydown=e=>{if(e.key==='Enter')teacherAuth()};q('teacherSelect').onchange=e=>{selected=e.target.value;safeSet('para_teacher_selected',selected)};q('teacherLogout').onclick=logOut;q('teacherSwitch').onclick=logOut;q('teacherPrev').onclick=()=>{q('teacherDate').value=addDays(monday(q('teacherDate').value),-7);drawTeacher()};q('teacherNext').onclick=()=>{q('teacherDate').value=addDays(monday(q('teacherDate').value),7);drawTeacher()};q('teacherDate').onchange=drawTeacher;q('teacherNum').onclick=()=>teacherWeekDate('numerator');q('teacherDen').onclick=()=>teacherWeekDate('denominator');
-q('teacherDate').value=activeDate;
+q('teacherDate').value=monday((()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})());
 const oldLoad=load; // the original loader already runs asynchronously; wait for imported data to be ready
 const originalRender=render; render=function(){originalRender();if(mode==='teacher'){drawTeacher();teacherLiveTimer()}};
-const ready=()=>{if(Object.keys(data).length){fill();if(safeGet('para_plus_last_mode')==='teacher'||safeGet('para_teacher_remembered'))changeMode('teacher')}else setTimeout(ready,40)};ready();
+const ready=()=>{if(Object.keys(data).length){activeDate=monday((()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})());q('teacherDate').value=activeDate;fill();if(safeGet('para_plus_last_mode')==='teacher'||safeGet('para_teacher_remembered'))changeMode('teacher')}else setTimeout(ready,40)};ready();
 })();
 </script>
 <script>
@@ -258,7 +258,7 @@ function tick(){
 }
 const oldRender=render;render=function(){oldRender();tick()};
 document.getElementById('studentMode').addEventListener('click',tick);document.getElementById('teacherMode').addEventListener('click',tick);
-activeDate=toMonday(todayISO());
+activeDate=toMonday(todayISO());document.getElementById('teacherDate').value=activeDate;
 // Existing load starts on initialization; redraw when data is ready.
 const refreshLiveTimers=()=>{try{tick()}catch(e){console.warn('Таймер студента:',e)}try{teacherLiveBridge()}catch(e){console.warn('Таймер преподавателя:',e)}};
 function teacherLiveBridge(){const teacherArea=document.getElementById('teacherArea');if(teacherArea && !teacherArea.classList.contains('hiddenMode')){document.dispatchEvent(new Event('para:teacher-tick'))}}
