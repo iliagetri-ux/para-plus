@@ -103,7 +103,7 @@ function teacherLiveTimer(){
   const candidates=[];
   for(const [grp,days] of Object.entries(data[week]?.groups||{}))for(const lesson of days[dayNames[dayIdx]]?.lessons||[]){
    const override=all[[grp,date,lesson.pair].join('::')]||{},actual={...lesson,...override};
-   if(actual.cancelled||!(splitTeacherMatch(lesson.teacher,activeTeacher)||splitTeacherMatch(actual.teacher,activeTeacher)))continue;
+   if(actual.cancelled||!splitTeacherMatch(actual.teacher,activeTeacher))continue;
    const start=actual.timeStart||startTime(lesson.pair),end=actual.timeEnd||endTime(start);
    if(!timeValid(start)||!timeValid(end))continue;
    const begin=at(date,start),finish=at(date,end);if(finish<=begin||finish<=now)continue;
