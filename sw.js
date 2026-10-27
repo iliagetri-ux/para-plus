@@ -1,39 +1,49 @@
-const CACHE_NAME = "para-plus-v2-2";
-
-const FILES = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
-  "./icon-192.png",
-  "./icon-512.png"
-];
-
+const CACHE_NAME = "para-plus-v2-3";
+const ASSETS = ["./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)));
-  self.skipWaiting();
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.allSettled(ASSETS.map(path => cache.add(new Request(path, {cache:"reload"}))));
+    await self.skipWaiting();
+  })());
 });
-
 self.addEventListener("activate", event => {
-  event.waitUntil(Promise.all([
-    caches.keys().then(keys => Promise.all(
-      keys.filter(key => key.startsWith("para-plus-") && key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-    )),
-    self.clients.claim()
-  ]));
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(key => key.startsWith("para-plus-") && key !== CACHE_NAME).map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
-
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
-  if (new URL(event.request.url).origin !== self.location.origin) return;
-
-  event.respondWith(
-    fetch(event.request).then(response => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+  if (req.mode === "navigate") {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(new Request(req, {cache:"no-store"}));
+        if (response.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          event.waitUntil(cache.put("./index.html", response.clone()));
+        }
+        return response;
+      } catch(err) {
+        return (await caches.match("./index.html")) || Response.error();
+      }
+    })());
+    return;
+  }
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(req);
       if (response.ok) {
-        const copy = response.clone();
-        event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)));
+        const cache = await caches.open(CACHE_NAME);
+        event.waitUntil(cache.put(req, response.clone()));
       }
       return response;
-    }).catch(() => caches.match(event.request))
-  );
+    } catch(err) {
+      return (await caches.match(req)) || Response.error();
+    }
+  })());
 });
