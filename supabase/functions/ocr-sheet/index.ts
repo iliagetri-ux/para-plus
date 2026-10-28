@@ -1,0 +1,27 @@
+const ORIGIN = "https://iliagetri-ux.github.io";
+const cors = { "Access-Control-Allow-Origin": ORIGIN, "Access-Control-Allow-Methods":"POST, OPTIONS", "Access-Control-Allow-Headers":"authorization, apikey, content-type", "Vary":"Origin" };
+const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json"}});
+Deno.serve(async req=>{
+ if(req.method==="OPTIONS")return new Response(null,{headers:cors});
+ if(req.method!=="POST")return json({error:"Method not allowed"},405);
+ if(req.headers.get("origin")!==ORIGIN)return json({error:"Origin not allowed"},403);
+ const jwt=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
+ if(!jwt)return json({error:"Войдите как администратор Supabase"},401);
+ const supabaseUrl=Deno.env.get("SUPABASE_URL")||"";
+ const publicKey=Deno.env.get("SUPABASE_ANON_KEY")||"";
+ const secret=Deno.env.get("OCRSPACE_API_KEY")||"";
+ if(!secret)return json({error:"OCR.space ещё не настроен: добавьте OCRSPACE_API_KEY в секреты Supabase"},503);
+ const auth=await fetch(supabaseUrl+"/auth/v1/user",{headers:{apikey:publicKey,Authorization:"Bearer "+jwt}});
+ if(!auth.ok)return json({error:"Нужен действующий вход администратора"},401);
+ const user=await auth.json();if(!user.id)return json({error:"Нет пользователя"},401);
+ const role=await fetch(supabaseUrl+"/rest/v1/app_admins?select=user_id&user_id=eq."+encodeURIComponent(user.id)+"&limit=1",{headers:{apikey:publicKey,Authorization:"Bearer "+jwt}});
+ if(!role.ok||!(await role.json()).length)return json({error:"Нет прав администратора"},403);
+ const body=await req.formData();const image=body.get("image");
+ if(!(image instanceof File)||!image.type.startsWith("image/")||image.size>5*1024*1024)return json({error:"Нужно изображение не более 5 МБ"},400);
+ const form=new FormData();form.append("file",image,image.name||"sheet.jpg");form.append("OCREngine","3");form.append("language","auto");form.append("isTable","true");
+ const response=await fetch("https://api.ocr.space/parse/image",{method:"POST",headers:{apikey:secret},body:form,signal:AbortSignal.timeout(45000)});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||data.IsErroredOnProcessing)return json({error:String(data.ErrorMessage||data.ErrorDetails||"Ошибка OCR.space")},502);
+ const text=(data.ParsedResults||[]).map((x:{ParsedText?:string})=>x.ParsedText||"").join("\n");
+ return json({text:text.slice(0,45000)});
+});
