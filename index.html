@@ -311,8 +311,8 @@ function tick(){
   const currentWeek=Math.abs(widx%2)===0?'numerator':'denominator';
   const d=data[currentWeek]?.groups?.[group]?.[dayNames[weekday]];
   if(!d)continue;
-  const entries=(d.lessons||[]).map(l=>{
-   const override=edits[[group,isoDate,l.pair].join('::')]||{};
+  const entries=(d.lessons||[]).map(lessonForSubgroup).filter(l=>l.subject.trim()).map(l=>{
+   const override=edits[[group,subgroup,isoDate,l.pair].join('::')]||edits[[group,isoDate,l.pair].join('::')]||{};
    const v={...l,...override},st=v.timeStart||startTime(l.pair),en=v.timeEnd||endTime(st);
    if(v.cancelled||!Number.isFinite(mins(st))||!Number.isFinite(mins(en))||mins(en)<=mins(st))return null;
    return {...v,date:isoDate,st,en,begin:dateObj(isoDate,st),finish:dateObj(isoDate,en)};
@@ -594,6 +594,7 @@ const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catc
 const keys={alerts:'para_demo_alerts_v3',subs:'para_demo_subs_v3'};
 const groups=Object.keys(data.numerator?.groups||{}).sort((a,b)=>a.localeCompare(b,'ru'));
 e('adminSubGroup').innerHTML=groups.map(g=>'<option>'+safe(g)+'</option>').join('');
+const subScope=document.createElement('select');subScope.id='adminSubSubgroup';subScope.name='subgroup';subScope.setAttribute('aria-label','Для кого действует замена');subScope.innerHTML='<option value="all">Вся группа</option><option value="1">Подгруппа 1</option><option value="2">Подгруппа 2</option>';e('adminSubGroup').after(subScope);
 e('adminGroupsPicker').innerHTML=groups.map(g=>'<label><input type="checkbox" value="'+safe(g)+'"> '+safe(g)+'</label>').join('');
 e('adminAlertScope').onchange=()=>e('adminGroupsPicker').classList.toggle('hiddenMode',e('adminAlertScope').value!=='groups');
 function relevant(a){return a.scope==='all'||a.scope==='students'||a.scope==='groups'&&a.groups.includes(group)}
@@ -631,8 +632,8 @@ e('adminPhoto').onchange=ev=>{
 };
 e('adminClearAttachments').onclick=()=>{attachedFiles=[];renderAttachments()};
 window.addEventListener('pagehide',()=>attachmentUrls.forEach(url=>URL.revokeObjectURL(url)));
-function renderSubs(){e('adminSubList').innerHTML=read(keys.subs).map(a=>'<div class="adminDemoItem">'+safe(a.date)+' · '+safe(a.group)+' · '+safe(a.pair)+' пара · '+safe(a.cancelled?'Отмена':a.subject||'Изменение')+' <button type="button" data-delete-sub="'+safe(a.id)+'">Удалить</button></div>').join('')}
-e('adminSubForm').onsubmit=ev=>{ev.preventDefault();const f=new FormData(ev.target),list=read(keys.subs);list.push({id:String(Date.now()),date:f.get('date'),group:f.get('group'),pair:Number(f.get('pair')),subject:f.get('subject'),room:f.get('room'),cancelled:f.has('cancelled')});if(put(keys.subs,list)){ev.target.reset();renderSubs()}};
+function renderSubs(){e('adminSubList').innerHTML=read(keys.subs).map(a=>'<div class="adminDemoItem">'+safe(a.date)+' · '+safe(a.group)+' · '+safe(a.subgroup?'Подгруппа '+a.subgroup:'Вся группа')+' · '+safe(a.pair)+' пара · '+safe(a.cancelled?'Отмена':a.subject||'Изменение')+' <button type="button" data-delete-sub="'+safe(a.id)+'">Удалить</button></div>').join('')}
+e('adminSubForm').onsubmit=ev=>{ev.preventDefault();const f=new FormData(ev.target),list=read(keys.subs),scope=f.get('subgroup');list.push({id:String(Date.now()),date:f.get('date'),group:f.get('group'),subgroup:scope==='all'?null:scope,pair:Number(f.get('pair')),subject:f.get('subject'),room:f.get('room'),cancelled:f.has('cancelled')});if(put(keys.subs,list)){ev.target.reset();renderSubs()}};
 e('adminSubList').onclick=ev=>{const id=ev.target.dataset.deleteSub;if(id){put(keys.subs,read(keys.subs).filter(a=>a.id!==id));renderSubs()}};
 e('adminClearSubs').onclick=()=>{if(confirm('Очистить черновик замен?')){put(keys.subs,[]);renderSubs()}};
 e('adminApplySubs').onclick=()=>{
@@ -645,9 +646,10 @@ e('adminApplySubs').onclick=()=>{
   const mondayISO=monday.getFullYear()+'-'+String(monday.getMonth()+1).padStart(2,'0')+'-'+String(monday.getDate()).padStart(2,'0');
   const n=Math.round((Date.parse(mondayISO+'T00:00:00Z')-Date.UTC(2026,8,21))/604800000);
   const w=Math.abs(n%2)===0?'numerator':'denominator';
-  const original=data[w]?.groups?.[a.group]?.[['Понедельник','Вторник','Среда','Четверг','Пятница'][idx]]?.lessons?.find(l=>l.pair===a.pair);
+  const source=data[w]?.groups?.[a.group]?.[['Понедельник','Вторник','Среда','Четверг','Пятница'][idx]]?.lessons?.find(l=>l.pair===a.pair);
+  const original=a.subgroup&&source?lessonForSubgroup({...source}):source;
   if(!original)continue;
-  const key=[a.group,a.date,a.pair].join('::');
+  const key=a.subgroup?[a.group,a.subgroup,a.date,a.pair].join('::'):[a.group,a.date,a.pair].join('::');
   edits[key]={...original,...edits[key],subject:a.subject||edits[key]?.subject||original.subject,room:a.room||edits[key]?.room||original.room,cancelled:a.cancelled,updatedAt:new Date().toISOString(),comment:'Тестовая замена администратора'};applied++;
  }
  if(!applied){alert('Не найдены подходящие занятия. Проверьте дату, группу и номер пары');return}
