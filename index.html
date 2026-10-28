@@ -811,6 +811,7 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
 (function(){
  const el=id=>document.getElementById(id);
  const run=el('adminOcrRun'), status=el('adminOcrStatus'),rows=el('adminOcrRows'),add=el('adminOcrDraft');
+ const oldForm=el('adminSubForm');if(oldForm)oldForm.style.display='none';for(const id of ['adminSubList','adminApplySubs','adminClearSubs']){const old=el(id);if(old)old.style.display='none'}
  if(!run||!rows)return;
  let parsed=[];
  const sheetLayout=document.createElement('div');
@@ -883,6 +884,25 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    const iso=text.match(/\b(20\d\d)[-./](\d{1,2})[-./](\d{1,2})\b/),ru=text.match(/\b(\d{1,2})[./](\d{1,2})[./](20\d\d)\b/);
    if(iso)contextDate=iso[1]+'-'+iso[2].padStart(2,'0')+'-'+iso[3].padStart(2,'0');
    else if(ru)contextDate=ru[3]+'-'+ru[2].padStart(2,'0')+'-'+ru[1].padStart(2,'0');
+   // Engine 3 may return Markdown tables; map columns rather than treating an entire row as one sentence.
+   const markdown=lines.filter(x=>x.includes('|')&&x.split('|').length>=6&&!/^\s*\|?[\s:|-]+\|?\s*$/.test(x));
+   if(markdown.length>=2){
+     const head=markdown[0].split('|').map(x=>x.trim().toLowerCase()).filter(Boolean);
+     const index=(variants)=>head.findIndex(h=>variants.some(v=>h.includes(v)));
+     const c={time:index(['время','начало']),group:index(['групп']),pair:index(['пары','пара']),subject:index(['дисциплин','предмет']),room:index(['кабинет','аудитор']),teacher:index(['фио','ф.и.о','преподав'])};
+     if(c.group>=0&&c.pair>=0){
+       for(const raw of markdown.slice(1)){
+         let cells=raw.split('|').map(x=>x.trim());if(cells[0]==='')cells.shift();if(cells[cells.length-1]==='')cells.pop();
+         const get=k=>c[k]<0?'':(cells[c[k]]||'').trim();
+         const g=get('group').match(/[А-ЯA-Z]{1,5}\s*[-–]\s*\d{2,4}/i);
+         const group=g?groupOptions.find(x=>x.replace(/\s/g,'').toUpperCase()===g[0].replace(/\s/g,'').replace('–','-').toUpperCase())||g[0].replace(/\s/g,''):'';
+         const pair=Number((get('pair').match(/[1-6]/)||[])[0]||0),subject=get('subject');
+         if(!group&&!pair&&!subject)continue;
+         result.push({date:contextDate,group,subgroup:'all',pair:pair||'',time:get('time'),subject,room:get('room'),teacher:get('teacher'),cancelled:/отмен|по расписанию/i.test(subject),verified:false});
+       }
+       if(result.length)return result.slice(0,100);
+     }
+   }
    for(const raw of lines){
      const line=raw.trim();if(!line)continue;
      const g=line.match(/[А-ЯA-Z]{1,5}\s*[-–]\s*\d{2,4}/i);
