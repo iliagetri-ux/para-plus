@@ -1,4 +1,4 @@
-const CACHE_NAME = "para-plus-v2-24";
+const CACHE_NAME = "para-plus-v2-20-ocr";
 const ASSETS = ["./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
