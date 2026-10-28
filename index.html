@@ -933,5 +933,6 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    const next=current.concat(entries.map((x,i)=>({id:String(Date.now())+'-'+i,date:x.date,group:x.group,subgroup:x.subgroup==='all'?null:x.subgroup,pair:x.pair,subject:x.subject,room:x.room,teacher:x.teacher,time:x.time,cancelled:x.cancelled})));
    try{localStorage.setItem('para_demo_subs_v3',JSON.stringify(next));el('adminSubList').innerHTML=next.map(a=>'<div class="adminDemoItem">'+[a.date,a.group,a.subgroup?'Подгруппа '+a.subgroup:'Вся группа',a.pair+' пара',a.cancelled?'Отмена':a.subject].map(v=>String(v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))).join(' · ')+ ' <button type="button" data-delete-sub="'+String(a.id).replace(/[^0-9-]/g,'')+'">Удалить</button></div>').join('');statusText('Добавлено в локальный черновик: '+entries.length+'. Для изменения расписания отдельно нажми «Применить черновик».')}catch{statusText('Не удалось сохранить черновик.')}
  };
+render();
 })();
 </script></body></html>
