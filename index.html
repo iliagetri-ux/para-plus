@@ -129,7 +129,7 @@ body.light .appearanceAccordion>summary{background:#e7edfa;color:#16243b;border-
 <section id="adminArea" class="hiddenMode" aria-label="Кабинет администратора"><div id="adminLoginBox" class="teacherBox"><h2>Вход администратора</h2><label for="adminCode">Код доступа</label><input type="password" id="adminCode" inputmode="numeric" autocomplete="off" placeholder="Введите код"><button id="adminEnter" type="button">Войти</button><p class="teacherHint" id="adminError" role="alert"></p><p class="note">Демонстрационный вход. Настоящая защита будет после подключения сервера.</p></div><div id="adminDashboard" class="hiddenMode"><div class="teacherOverline muted">ПАНЕЛЬ УПРАВЛЕНИЯ</div><h2 style="color:var(--accent)">Администратор</h2><div class="adminDashboardCards">
 <div class="teacherBox"><h3>📰 Новости</h3><form id="adminNewsForm" class="adminTestForm"><input name="title" placeholder="Заголовок новости" required maxlength="120"><textarea name="body" placeholder="Текст новости" required rows="3" maxlength="1500"></textarea><label><input type="checkbox" name="featured"> Показать под расписанием студентов</label><button type="submit">Опубликовать локально</button></form><div id="adminNewsList"></div></div>
 <div class="teacherBox"><h3>🔔 Оповещения</h3><form id="adminAlertForm" class="adminTestForm"><input name="title" placeholder="Заголовок оповещения" required maxlength="120"><textarea name="body" placeholder="Текст оповещения" required rows="2" maxlength="800"></textarea><select name="scope" id="adminAlertScope"><option value="all">Все пользователи</option><option value="students">Все студенты</option><option value="groups">Выбранные группы</option></select><div id="adminGroupsPicker" class="hiddenMode"></div><button type="submit">Создать оповещение локально</button></form><div id="adminAlertList"></div></div>
-<div class="teacherBox"><h3>📷 Умные замены</h3><p class="note">Загрузка фото и ручной ввод распознанной замены. Автоматическое распознавание фотографии пока не подключено.</p><label for="adminPhoto">Добавить фото или файлы замен</label><input id="adminPhoto" type="file" accept="image/*,.pdf,application/pdf,.xlsx,.xls,.csv,.doc,.docx" multiple><div class="note">Можно выбрать несколько изображений, PDF, Excel или документов. Файлы остаются только в этом сеансе и не отправляются на сервер.</div><div id="adminAttachmentList" class="adminAttachmentList" aria-live="polite"></div><div id="adminAttachmentPreviews" class="adminAttachmentPreviews"></div><button id="adminClearAttachments" type="button">Очистить вложения</button><form id="adminSubForm" class="adminTestForm"><input type="date" name="date" required><select name="group" id="adminSubGroup" required></select><select name="pair" required><option value="1">1 пара</option><option value="2">2 пара</option><option value="3">3 пара</option><option value="4">4 пара</option><option value="5">5 пара</option><option value="6">6 пара</option></select><input name="subject" placeholder="Новый предмет"><input name="room" placeholder="Кабинет"><label><input type="checkbox" name="cancelled"> Пара отменена</label><button type="submit">Добавить в черновик</button></form><div id="adminSubList"></div><button id="adminApplySubs" type="button">Применить черновик на этом устройстве</button><button id="adminClearSubs" type="button">Очистить черновик</button></div>
+<div class="teacherBox"><h3>📷 Умные замены</h3><p class="note">Загрузка фото и ручной ввод распознанной замены. Автоматическое распознавание фотографии пока не подключено.</p><label for="adminPhoto">Добавить фото или файлы замен</label><input id="adminPhoto" type="file" accept="image/*,.pdf,application/pdf,.xlsx,.xls,.csv,.doc,.docx" multiple><div class="note">Можно выбрать несколько изображений, PDF, Excel или документов. Файлы остаются только в этом сеансе и не отправляются на сервер.</div><div id="adminAttachmentList" class="adminAttachmentList" aria-live="polite"></div><div id="adminAttachmentPreviews" class="adminAttachmentPreviews"></div><button id="adminClearAttachments" type="button">Очистить вложения</button><div id="adminOcrPanel" class="teacherBox" style="margin:12px 0"><h4>Распознавание фото (на устройстве)</h4><p class="note">Выбери фотографию выше, затем нажми «Распознать». Tesseract.js загружается из внешней библиотеки; изображение обрабатывается в браузере и не отправляется в Supabase или OpenAI. Для первого запуска нужен интернет.</p><button type="button" id="adminOcrRun">Распознать фото</button><p id="adminOcrStatus" class="note" role="status"></p><div id="adminOcrRows"></div><button type="button" id="adminOcrDraft" style="display:none">Добавить отмеченные строки в черновик</button></div><form id="adminSubForm" class="adminTestForm"><input type="date" name="date" required><select name="group" id="adminSubGroup" required></select><select name="pair" required><option value="1">1 пара</option><option value="2">2 пара</option><option value="3">3 пара</option><option value="4">4 пара</option><option value="5">5 пара</option><option value="6">6 пара</option></select><input name="subject" placeholder="Новый предмет"><input name="room" placeholder="Кабинет"><label><input type="checkbox" name="cancelled"> Пара отменена</label><button type="submit">Добавить в черновик</button></form><div id="adminSubList"></div><button id="adminApplySubs" type="button">Применить черновик на этом устройстве</button><button id="adminClearSubs" type="button">Очистить черновик</button></div>
 </div><button id="adminLogout" type="button">Выйти из администратора</button></div></section>
 <section id="teacherArea" class="hiddenMode">
  <div class="teacherBox"><h2 id="teacherLoginTitle" style="margin:0 0 8px">Вход преподавателя</h2>
@@ -805,5 +805,101 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
   showGroups();
  }
  const wait=()=>{if(!Object.keys(data).length){setTimeout(wait,30);return}start()};wait();
+})();
+</script><script>
+/* Browser-only OCR: image pixels are read locally; no upload request is made. */
+(function(){
+ const el=id=>document.getElementById(id);
+ const run=el('adminOcrRun'), status=el('adminOcrStatus'),rows=el('adminOcrRows'),add=el('adminOcrDraft');
+ if(!run||!rows)return;
+ let parsed=[];
+ const groupOptions=[...el('adminSubGroup').options].map(o=>o.value);
+ const selectedDate=()=>el('adminSubForm').elements.date.value||new Date().toLocaleDateString('en-CA');
+ function statusText(t){status.textContent=t}
+ function input(type,value,label,choices){
+   const wrap=document.createElement('label');wrap.style.cssText='display:flex;flex-direction:column;gap:4px;min-width:75px;flex:1';wrap.textContent=label;
+   let field;
+   if(choices){field=document.createElement('select');choices.forEach(v=>{const o=document.createElement('option');o.value=v[0];o.textContent=v[1];field.append(o)})}
+   else{field=document.createElement('input');field.type=type}
+   field.value=value;field.style.maxWidth='100%';wrap.append(field);return {wrap,field};
+ }
+ function render(){
+   rows.replaceChildren();add.style.display=parsed.length?'':'none';
+   parsed.forEach((record,i)=>{
+     const article=document.createElement('div');article.className='adminDemoItem';article.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:10px 0';
+     const picked=input('checkbox',true,'В черновик');picked.field.checked=true;
+     const date=input('date',record.date,'Дата');
+     const group=input('text',record.group,'Группа');
+     group.field.setAttribute('list','adminOcrGroups');
+     const subgroup=input('text',record.subgroup,'Подгруппа (all/1/2)');
+     const pair=input('number',record.pair,'Пара (1–6)');pair.field.min='1';pair.field.max='6';
+     const subject=input('text',record.subject,'Предмет');
+     const room=input('text',record.room,'Кабинет');
+     const cancelled=input('checkbox',record.cancelled,'Отмена');cancelled.field.checked=record.cancelled;
+     article.append(...[picked,date,group,subgroup,pair,subject,room,cancelled].map(x=>x.wrap));
+     article.dataset.ocrRow=String(i);
+     article._fields={picked,date,group,subgroup,pair,subject,room,cancelled};
+     rows.append(article);
+   });
+   if(!el('adminOcrGroups')){const dl=document.createElement('datalist');dl.id='adminOcrGroups';groupOptions.forEach(g=>{const o=document.createElement('option');o.value=g;dl.append(o)});rows.after(dl)}
+ }
+ function parseLines(text){
+   const result=[];let contextGroup=el('adminSubGroup').value;let contextDate=selectedDate();
+   const iso=text.match(/\b20\d\d[-./]\d{1,2}[-./]\d{1,2}\b/);
+   const ru=text.match(/\b(\d{1,2})[./](\d{1,2})[./](20\d\d)\b/);
+   if(iso){const p=iso[0].split(/[-./]/);contextDate=p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0')}
+   else if(ru)contextDate=ru[3]+'-'+ru[2].padStart(2,'0')+'-'+ru[1].padStart(2,'0');
+   for(const raw of text.split(/\r?\n/)){
+     const line=raw.trim();if(!line)continue;
+     const g=line.match(/(?:[А-ЯA-Z]{1,5}[-–]?\d{2,4})/i);
+     if(g){const exact=groupOptions.find(v=>v.replace(/\s/g,'').toUpperCase()===g[0].replace(/[–]/g,'-').toUpperCase());if(exact)contextGroup=exact}
+     const pairMatch=line.match(/(?:^|\s|[№#])([1-6])\s*(?:[-.)]|пара|п\.|\s{2,})/i)||line.match(/(?:пара|урок)\s*№?\s*([1-6])/i);
+     if(!pairMatch)continue;
+     const sub=line.match(/(?:подгр(?:уппа)?\.?\s*|п\/г\s*|п\/гр\s*)([12])/i);
+     const cancel=/отмен|снят|не будет/i.test(line);
+     let subject=line.replace(g?.[0]||/^$/,'').replace(pairMatch[0],'').replace(/(?:подгр(?:уппа)?\.?\s*|п\/г\s*|п\/гр\s*)[12]/ig,'').trim();
+     const cabinet=subject.match(/(?:каб(?:инет)?\.?\s*|ауд\.?\s*|№\s*)(\d{2,4})\b/i);
+     const room=cabinet?.[1]||'';
+     if(cabinet)subject=subject.replace(cabinet[0],'').trim();
+     subject=subject.replace(/^[\s:;,.–-]+|[\s:;,.–-]+$/g,'');
+     result.push({date:contextDate,group:contextGroup,subgroup:sub?.[1]||'all',pair:Number(pairMatch[1]),subject:cancel?'':subject,room,cancelled:cancel});
+   }
+   return result.slice(0,80);
+ }
+ async function loadTesseract(){
+   if(window.Tesseract)return window.Tesseract;
+   await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';script.onload=resolve;script.onerror=()=>reject(Error('Не удалось загрузить Tesseract.js'));document.head.append(script)});
+   if(!window.Tesseract)throw Error('Tesseract.js недоступен');return window.Tesseract;
+ }
+ run.onclick=async()=>{
+   const file=[...el('adminPhoto').files][0]||null;
+   // The existing attachment picker clears its input on change, so use its rendered preview URL.
+   const image=el('adminAttachmentPreviews').querySelector('img');
+   if(!image){statusText('Сначала добавь фотографию замен. PDF и Excel пока не распознаются.');return}
+   run.disabled=true;parsed=[];render();statusText('Загрузка модели OCR…');
+   let worker;
+   try{
+     const t=await loadTesseract();
+     worker=await t.createWorker('rus+eng',1,{logger:m=>{if(m.status==='recognizing text')statusText('Распознавание: '+Math.round((m.progress||0)*100)+'%')}});
+     const result=await worker.recognize(image.src);
+     parsed=parseLines(result.data.text||'');
+     if(!parsed.length){parsed=[{date:selectedDate(),group:el('adminSubGroup').value,subgroup:'all',pair:1,subject:'',room:'',cancelled:false}];statusText('Строки не определены автоматически. Добавлена пустая редактируемая строка. Проверь фото и заполни поля вручную.')}
+     else statusText('Найдено строк: '+parsed.length+'. Обязательно проверь каждую строку перед добавлением.');
+     render();
+   }catch(error){statusText('Ошибка распознавания: '+error.message)}
+   finally{if(worker)await worker.terminate();run.disabled=false}
+ };
+ add.onclick=()=>{
+   const entries=[...rows.querySelectorAll('[data-ocr-row]')].map(a=>{
+     const f=a._fields;
+     return {date:f.date.field.value,group:f.group.field.value.trim(),subgroup:f.subgroup.field.value.trim(),pair:Number(f.pair.field.value),subject:f.subject.field.value.trim(),room:f.room.field.value.trim(),cancelled:f.cancelled.field.checked,selected:f.picked.field.checked}
+   }).filter(x=>x.selected);
+   if(!entries.length){statusText('Отметь хотя бы одну строку.');return}
+   const bad=entries.find(x=>!(/^\d{4}-\d{2}-\d{2}$/.test(x.date))||!groupOptions.includes(x.group)||![1,2,3,4,5,6].includes(x.pair)||!['all','1','2'].includes(x.subgroup)||(!x.cancelled&&!x.subject));
+   if(bad){statusText('Проверь выбранные строки: дата, существующая группа, подгруппа (all/1/2), пара 1–6 и предмет.');return}
+   let current;try{current=JSON.parse(localStorage.getItem('para_demo_subs_v3')||'[]');if(!Array.isArray(current))current=[]}catch{current=[]}
+   const next=current.concat(entries.map((x,i)=>({id:String(Date.now())+'-'+i,date:x.date,group:x.group,subgroup:x.subgroup==='all'?null:x.subgroup,pair:x.pair,subject:x.subject,room:x.room,cancelled:x.cancelled})));
+   try{localStorage.setItem('para_demo_subs_v3',JSON.stringify(next));el('adminSubList').innerHTML=next.map(a=>'<div class="adminDemoItem">'+[a.date,a.group,a.subgroup?'Подгруппа '+a.subgroup:'Вся группа',a.pair+' пара',a.cancelled?'Отмена':a.subject].map(v=>String(v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))).join(' · ')+'</div>').join('');statusText('Добавлено в локальный черновик: '+entries.length+'. Для изменения расписания отдельно нажми «Применить черновик».')}catch{statusText('Не удалось сохранить черновик.')}
+ };
 })();
 </script></body></html>
