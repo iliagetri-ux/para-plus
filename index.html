@@ -129,7 +129,7 @@ body.light .appearanceAccordion>summary{background:#e7edfa;color:#16243b;border-
 <section id="adminArea" class="hiddenMode" aria-label="Кабинет администратора"><div id="adminLoginBox" class="teacherBox"><h2>Вход администратора</h2><label for="adminCode">Код доступа</label><input type="password" id="adminCode" inputmode="numeric" autocomplete="off" placeholder="Введите код"><button id="adminEnter" type="button">Войти</button><p class="teacherHint" id="adminError" role="alert"></p><p class="note">Демонстрационный вход. Настоящая защита будет после подключения сервера.</p></div><div id="adminDashboard" class="hiddenMode"><div class="teacherOverline muted">ПАНЕЛЬ УПРАВЛЕНИЯ</div><h2 style="color:var(--accent)">Администратор</h2><div class="adminDashboardCards">
 <div class="teacherBox"><h3>📰 Новости</h3><form id="adminNewsForm" class="adminTestForm"><input name="title" placeholder="Заголовок новости" required maxlength="120"><textarea name="body" placeholder="Текст новости" required rows="3" maxlength="1500"></textarea><label><input type="checkbox" name="featured"> Показать под расписанием студентов</label><button type="submit">Опубликовать локально</button></form><div id="adminNewsList"></div></div>
 <div class="teacherBox"><h3>🔔 Оповещения</h3><form id="adminAlertForm" class="adminTestForm"><input name="title" placeholder="Заголовок оповещения" required maxlength="120"><textarea name="body" placeholder="Текст оповещения" required rows="2" maxlength="800"></textarea><select name="scope" id="adminAlertScope"><option value="all">Все пользователи</option><option value="students">Все студенты</option><option value="groups">Выбранные группы</option></select><div id="adminGroupsPicker" class="hiddenMode"></div><button type="submit">Создать оповещение локально</button></form><div id="adminAlertList"></div></div>
-<div class="teacherBox"><h3>📷 Умные замены</h3><p class="note">Загрузка фото и ручной ввод распознанной замены. После распознавания сверь строки с оригинальной ведомостью, исправь ошибки и подтверди каждую строку галочкой.</p><label for="adminPhoto">Добавить фото или файлы замен</label><input id="adminPhoto" type="file" accept="image/*,.pdf,application/pdf,.xlsx,.xls,.csv,.doc,.docx" multiple><div class="note">Можно выбрать несколько изображений, PDF, Excel или документов. Файлы остаются только в этом сеансе и не отправляются на сервер.</div><div id="adminAttachmentList" class="adminAttachmentList" aria-live="polite"></div><div id="adminAttachmentPreviews" class="adminAttachmentPreviews"></div><button id="adminClearAttachments" type="button">Очистить вложения</button><div id="adminOcrPanel" class="teacherBox" style="margin:12px 0"><h4>Распознавание фото (на устройстве)</h4><p class="note">Выбери фотографию выше, затем нажми «Распознать». Tesseract.js загружается из внешней библиотеки; изображение обрабатывается в браузере и не отправляется в Supabase или OpenAI. Для первого запуска нужен интернет.</p><button type="button" id="adminOcrRun">Распознать фото</button><p id="adminOcrStatus" class="note" role="status"></p><div id="adminOcrRows"></div><button type="button" id="adminOcrDraft" style="display:none">Добавить отмеченные строки в черновик</button></div><form id="adminSubForm" class="adminTestForm"><input type="date" name="date" required><select name="group" id="adminSubGroup" required></select><select name="pair" required><option value="1">1 пара</option><option value="2">2 пара</option><option value="3">3 пара</option><option value="4">4 пара</option><option value="5">5 пара</option><option value="6">6 пара</option></select><input name="subject" placeholder="Новый предмет"><input name="room" placeholder="Кабинет"><label><input type="checkbox" name="cancelled"> Пара отменена</label><button type="submit">Добавить в черновик</button></form><div id="adminSubList"></div><button id="adminApplySubs" type="button">Применить черновик на этом устройстве</button><button id="adminClearSubs" type="button">Очистить черновик</button></div>
+<div class="teacherBox"><h3>📷 Умные замены</h3><p class="note">Загрузка фото и ручной ввод распознанной замены. После распознавания сверь строки с оригинальной ведомостью, исправь ошибки и подтверди каждую строку галочкой.</p><label for="adminPhoto">Добавить фото или файлы замен</label><input id="adminPhoto" type="file" accept="image/*,.pdf,application/pdf,.xlsx,.xls,.csv,.doc,.docx" multiple><div class="note">Можно выбрать несколько изображений, PDF, Excel или документов. Файлы остаются только в этом сеансе и не отправляются на сервер.</div><div id="adminAttachmentList" class="adminAttachmentList" aria-live="polite"></div><div id="adminAttachmentPreviews" class="adminAttachmentPreviews"></div><button id="adminClearAttachments" type="button">Очистить вложения</button><div id="adminOcrPanel" class="teacherBox" style="margin:12px 0"><h4>Распознавание фото (на устройстве)</h4><p class="note">Выбери фотографию выше, затем нажми «Распознать». Фото отправляется в OCR.space через защищённую Supabase Edge Function. Данные не отправляются в OpenAI. Для распознавания требуется подключение сервиса и вход администратора.</p><button type="button" id="adminOcrRun">Распознать весь лист через OCR.space</button><p id="adminOcrStatus" class="note" role="status"></p><div id="adminOcrRows"></div><button type="button" id="adminOcrDraft" style="display:none">Применить отмеченные замены</button></div><form id="adminSubForm" class="adminTestForm"><input type="date" name="date" required><select name="group" id="adminSubGroup" required></select><select name="pair" required><option value="1">1 пара</option><option value="2">2 пара</option><option value="3">3 пара</option><option value="4">4 пара</option><option value="5">5 пара</option><option value="6">6 пара</option></select><input name="subject" placeholder="Новый предмет"><input name="room" placeholder="Кабинет"><label><input type="checkbox" name="cancelled"> Пара отменена</label><button type="submit">Добавить в черновик</button></form><div id="adminSubList"></div><button id="adminApplySubs" type="button">Применить черновик на этом устройстве</button><button id="adminClearSubs" type="button">Очистить черновик</button></div>
 </div><button id="adminLogout" type="button">Выйти из администратора</button></div></section>
 <section id="teacherArea" class="hiddenMode">
  <div class="teacherBox"><h2 id="teacherLoginTitle" style="margin:0 0 8px">Вход преподавателя</h2>
@@ -914,35 +914,60 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
  }
  run.onclick=async()=>{
    const images=[...el('adminAttachmentPreviews').querySelectorAll('img')];
-   if(!images.length){statusText('Сначала загрузи фотографии целой ведомости.');return}
-   run.disabled=true;parsed=[];render();statusText('Загрузка распознавания всех листов…');let worker;
+   if(!images.length){statusText('Сначала загрузи фотографии ведомости.');return}
+   const auth=window.ParaPlusAuth;const session=await auth?.current?.();
+   if(!session?.access_token){statusText('Для OCR.space войди через защищённый аккаунт администратора Supabase.');return}
+   run.disabled=true;parsed=[];render();
    try{
-     const t=await loadTesseract();
-     worker=await t.createWorker('rus+eng',1,{logger:m=>{if(m.status==='recognizing text')statusText('Распознавание: '+Math.round((m.progress||0)*100)+'%')}});
      for(let i=0;i<images.length;i++){
-       statusText('Лист '+(i+1)+' из '+images.length+': распознавание…');
-       const canvas=await prepareImage(images[i].src);
-       const recognition=await worker.recognize(canvas);
-       const detected=parseLines(recognition.data.text||'');
-       parsed.push(...detected);
+       statusText('OCR.space: обрабатывается лист '+(i+1)+' из '+images.length+'…');
+       const original=await fetch(images[i].src).then(r=>r.blob());
+       const form=new FormData();form.append('image',original,'sheet.jpg');
+       const resp=await fetch('https://dmvvezrgaanenwccvhai.supabase.co/functions/v1/ocr-sheet',{
+         method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_7-Jl9UbpSvcMuzYOrHoDXA_mvA4uJoR'},body:form
+       });
+       const json=await resp.json().catch(()=>({error:'Некорректный ответ сервера'}));
+       if(!resp.ok)throw Error(json.error||'OCR.space недоступен');
+       const detected=parseLines(json.text||'');parsed.push(...detected);
      }
-     if(!parsed.length){parsed=Array.from({length:16},()=>blankRow());statusText('Рукописный текст не удалось надёжно распознать. Созданы 16 пустых строк для сверки всего листа; заполните их по фотографии.')}
-     else{while(parsed.length<16)parsed.push(blankRow());statusText('Подготовлено строк: '+parsed.length+'. Рукописный текст может быть ошибочным — проверь ВСЕ поля по фотографии и поставь галочки только у верных строк. Пустые строки предназначены для пропущенных записей.')}
+     if(!parsed.length){parsed=Array.from({length:16},()=>blankRow());statusText('Текст получен, но строки автоматически не распределились. Таблицу можно заполнить вручную.')}
+     else{while(parsed.length<16)parsed.push(blankRow());statusText('OCR.space обработал листы. Обязательно сверь все строки с фотографией: разбор колонок может содержать ошибки.')}
      render();el('adminOcrPanel').classList.add('ocrFullScreen');document.body.style.overflow='hidden';
-   }catch(error){statusText('Ошибка распознавания: '+error.message+'; можно заполнить таблицу вручную.');parsed=Array.from({length:16},()=>blankRow());render()}
-   finally{if(worker)await worker.terminate();run.disabled=false}
+   }catch(error){statusText('Ошибка OCR.space: '+error.message+'. Для работы нужны развёрнутая Edge Function и её секретный ключ.');if(!parsed.length)parsed=Array.from({length:16},()=>blankRow());render()}
+   finally{run.disabled=false}
  };
  add.onclick=()=>{
    const entries=[...rows.querySelectorAll('[data-ocr-row]')].map(a=>{
      const f=a._fields;
      return {date:f.date.field.value,group:f.group.field.value.trim(),subgroup:f.subgroup.field.value.trim(),pair:Number(f.pair.field.value),subject:f.subject.field.value.trim(),room:f.room.field.value.trim(),teacher:f.teacher.field.value.trim(),time:f.time.field.value.trim(),cancelled:f.cancelled.field.checked,selected:f.picked.field.checked}
    }).filter(x=>x.selected);
-   if(!entries.length){statusText('Сначала проверь строки и отметь галочками верные.');return}
+   if(!entries.length){statusText('Отметь галочками проверенные строки.');return}
    const bad=entries.find(x=>!(/^\d{4}-\d{2}-\d{2}$/.test(x.date))||!groupOptions.includes(x.group)||![1,2,3,4,5,6].includes(x.pair)||!['all','1','2'].includes(x.subgroup)||(!x.cancelled&&!x.subject));
-   if(bad){statusText('Проверь выбранные строки: дата, существующая группа, подгруппа (all/1/2), пара 1–6 и предмет.');return}
-   let current;try{current=JSON.parse(localStorage.getItem('para_demo_subs_v3')||'[]');if(!Array.isArray(current))current=[]}catch{current=[]}
-   const next=current.concat(entries.map((x,i)=>({id:String(Date.now())+'-'+i,date:x.date,group:x.group,subgroup:x.subgroup==='all'?null:x.subgroup,pair:x.pair,subject:x.subject,room:x.room,teacher:x.teacher,time:x.time,cancelled:x.cancelled})));
-   try{localStorage.setItem('para_demo_subs_v3',JSON.stringify(next));el('adminSubList').innerHTML=next.map(a=>'<div class="adminDemoItem">'+[a.date,a.group,a.subgroup?'Подгруппа '+a.subgroup:'Вся группа',a.pair+' пара',a.cancelled?'Отмена':a.subject].map(v=>String(v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))).join(' · ')+ ' <button type="button" data-delete-sub="'+String(a.id).replace(/[^0-9-]/g,'')+'">Удалить</button></div>').join('');statusText('Добавлено в локальный черновик: '+entries.length+'. Для изменения расписания отдельно нажми «Применить черновик».')}catch{statusText('Не удалось сохранить черновик.')}
+   if(bad){statusText('У одной из выбранных строк ошибка: проверь дату, группу, подгруппу, пару и предмет.');return}
+   const editsKey='para_plus_edits_v2',weekNames=['Понедельник','Вторник','Среда','Четверг','Пятница'];let edits={};
+   try{edits=JSON.parse(localStorage.getItem(editsKey)||'{}')||{}}catch{edits={}}
+   let applied=0,missing=0;const next={...edits};
+   for(const a of entries){
+     const d=new Date(a.date+'T12:00:00'),idx=(d.getDay()+6)%7;if(idx>4){missing++;continue}
+     const monday=new Date(d);monday.setDate(d.getDate()-idx);
+     const mondayISO=monday.getFullYear()+'-'+String(monday.getMonth()+1).padStart(2,'0')+'-'+String(monday.getDate()).padStart(2,'0');
+     const n=Math.round((Date.parse(mondayISO+'T00:00:00Z')-Date.UTC(2026,8,21))/604800000),week=Math.abs(n%2)===0?'numerator':'denominator';
+     const original=data[week]?.groups?.[a.group]?.[weekNames[idx]]?.lessons?.find(l=>l.pair===a.pair);
+     if(!original){missing++;continue}
+     const sub=a.subgroup==='all'?null:a.subgroup;
+     const key=sub?[a.group,sub,a.date,a.pair].join('::'):[a.group,a.date,a.pair].join('::');
+     next[key]={...original,...next[key],subject:a.subject||original.subject,room:a.room||original.room,cancelled:a.cancelled,updatedAt:new Date().toISOString(),comment:'Проверенная замена из ведомости'};
+     applied++;
+   }
+   if(!applied){statusText('Не найдены занятия для выбранных строк. Проверь даты, группы и пары.');return}
+   try{
+     localStorage.setItem(editsKey,JSON.stringify(next));
+     rows.querySelectorAll('[data-ocr-row]').forEach(r=>{if(r._fields.picked.field.checked)r._fields.picked.field.checked=false});
+     parsed.forEach(p=>p.verified=false);
+     statusText('Применено на этом устройстве: '+applied+'. Не удалось сопоставить: '+missing+'. Синхронизация с другими устройствами ещё не подключена.');
+     if(typeof render==='function')render();
+     window.dispatchEvent(new Event('storage'));
+   }catch{statusText('Не удалось сохранить замены.')}
  };
 render();
 })();
