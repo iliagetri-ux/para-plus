@@ -830,7 +830,7 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    editor.replaceChildren();
    const controls=document.createElement('div');controls.style.cssText='display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0';
    const date=input('date',parsed[0]?.date||selectedDate(),'Дата ведомости');
-   date.field.onchange=()=>{rows.querySelectorAll('[data-ocr-row]').forEach(r=>r._fields.date.field.value=date.field.value)};
+   date.field.onchange=()=>{parsed.forEach(r=>r.date=date.field.value);rows.querySelectorAll('[data-ocr-row]').forEach(r=>r._fields.date.field.value=date.field.value)};
    const newRow=document.createElement('button');newRow.type='button';newRow.textContent='+ Добавить строку вручную';
    newRow.onclick=()=>{parsed.push({date:date.field.value,group:el('adminSubGroup').value,subgroup:'all',pair:1,subject:'',room:'',teacher:'',time:'',cancelled:false});render()};
    controls.append(date.wrap,newRow);editor.append(controls);
@@ -842,7 +842,7 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    const body=document.createElement('tbody');
    parsed.forEach((record,i)=>{
      const tr=document.createElement('tr');tr.dataset.ocrRow=String(i);
-     const picked=input('checkbox',false,'');picked.field.checked=false;picked.field.setAttribute('aria-label','Подтверждаю строку '+(i+1));
+     const picked=input('checkbox',false,'');picked.field.checked=Boolean(record.verified);picked.field.setAttribute('aria-label','Подтверждаю строку '+(i+1));
      const dateField=input('date',record.date,'');dateField.wrap.style.display='none';
      const time=input('text',record.time||'','');time.field.placeholder='8:30';
      const group=input('text',record.group,'');group.field.setAttribute('list','adminOcrGroups');
@@ -857,6 +857,8 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
        const td=document.createElement('td');td.style.cssText='border:1px solid #8885;padding:4px;vertical-align:middle';obj.field.style.cssText='box-sizing:border-box;width:100%;min-width:58px;padding:6px;font:inherit';if(obj===subject)obj.field.style.minWidth='160px';if(obj===teacher)obj.field.style.minWidth='135px';if(obj===picked||obj===cancelled)obj.field.style.width='20px';td.append(obj.field);tr.append(td)
      }
      const last=document.createElement('td');last.style.cssText='border:1px solid #8885;padding:4px';last.append(remove,dateField.field);tr.append(last);
+     for(const [key,obj] of Object.entries({group,subgroup,pair,subject,room,teacher,time,cancelled})){obj.field.addEventListener('input',()=>{record[key]=key==='cancelled'?obj.field.checked:obj.field.value})}
+     picked.field.addEventListener('change',()=>{record.verified=picked.field.checked});
      tr._fields={picked,date:dateField,group,subgroup,pair,subject,room,teacher,time,cancelled};
      body.append(tr);
    });table.append(body);viewport.append(table);rows.append(viewport);
