@@ -823,6 +823,9 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    imagesStyle.textContent='#ocrVerifyLayout #adminAttachmentPreviews img{width:100%;max-width:100%;height:auto;max-height:none;object-fit:contain;cursor:zoom-in}#ocrVerifyLayout #adminOcrRows{min-width:0} @media(max-width:740px){#ocrVerifyLayout{grid-template-columns:1fr!important}#ocrVerifyLayout #adminAttachmentPreviews{position:static!important;max-height:300px!important}}';
    document.head.append(imagesStyle);
    rows.before(sheetLayout);sheetLayout.append(preview,rows);
+   const panel=el('adminOcrPanel');const open=document.createElement('button');open.type='button';open.textContent='Развернуть ведомость на весь экран';open.onclick=()=>{panel.classList.add('ocrFullScreen');document.body.style.overflow='hidden'};run.before(open);
+   const close=document.createElement('button');close.type='button';close.textContent='✕ Закрыть ведомость';close.style.cssText='position:sticky;top:0;z-index:3';close.onclick=()=>{panel.classList.remove('ocrFullScreen');document.body.style.overflow=''};panel.prepend(close);
+   const stylesheet=document.createElement('style');stylesheet.textContent='#adminOcrPanel.ocrFullScreen{position:fixed!important;inset:0!important;z-index:99999!important;background:var(--bg,#171821)!important;color:inherit!important;overflow:auto!important;margin:0!important;padding:16px!important;border-radius:0!important}#adminOcrPanel.ocrFullScreen #ocrVerifyLayout{grid-template-columns:minmax(300px,45%) minmax(0,55%)!important}#adminOcrPanel.ocrFullScreen #adminAttachmentPreviews{max-height:calc(100vh - 145px)!important}@media(max-width:800px){#adminOcrPanel.ocrFullScreen #ocrVerifyLayout{grid-template-columns:1fr!important}}';document.head.append(stylesheet);
  }
  const groupOptions=[...el('adminSubGroup').options].map(o=>o.value);
  const selectedDate=()=>el('adminSubForm').elements.date.value||new Date().toLocaleDateString('en-CA');
@@ -843,7 +846,7 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    const date=input('date',parsed[0]?.date||selectedDate(),'Дата ведомости');
    date.field.onchange=()=>{parsed.forEach(r=>r.date=date.field.value);rows.querySelectorAll('[data-ocr-row]').forEach(r=>r._fields.date.field.value=date.field.value)};
    const newRow=document.createElement('button');newRow.type='button';newRow.textContent='+ Добавить строку вручную';
-   newRow.onclick=()=>{parsed.push({date:date.field.value,group:el('adminSubGroup').value,subgroup:'all',pair:1,subject:'',room:'',teacher:'',time:'',cancelled:false});render()};
+   newRow.onclick=()=>{parsed.push({...blankRow(),date:date.field.value});render()};
    controls.append(date.wrap,newRow);editor.append(controls);
    const note=document.createElement('p');note.className='note';note.textContent='Сверь каждую строку с фотографией. Исправь ошибки и поставь галочку «Верно» только после проверки. Неподтверждённые строки не попадут в черновик.';editor.append(note);
    const viewport=document.createElement('div');viewport.style.cssText='overflow-x:auto;width:100%;margin:10px 0';
@@ -876,27 +879,33 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    if(!el('adminOcrGroups')){const dl=document.createElement('datalist');dl.id='adminOcrGroups';groupOptions.forEach(g=>{const o=document.createElement('option');o.value=g;dl.append(o)});rows.after(dl)}
  }
  function parseLines(text){
-   const result=[];let contextGroup=el('adminSubGroup').value;let contextDate=selectedDate();
-   const iso=text.match(/\b20\d\d[-./]\d{1,2}[-./]\d{1,2}\b/);
-   const ru=text.match(/\b(\d{1,2})[./](\d{1,2})[./](20\d\d)\b/);
-   if(iso){const p=iso[0].split(/[-./]/);contextDate=p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0')}
+   const result=[],lines=text.split(/\r?\n/);let contextDate=selectedDate(),contextGroup='';
+   const iso=text.match(/\b(20\d\d)[-./](\d{1,2})[-./](\d{1,2})\b/),ru=text.match(/\b(\d{1,2})[./](\d{1,2})[./](20\d\d)\b/);
+   if(iso)contextDate=iso[1]+'-'+iso[2].padStart(2,'0')+'-'+iso[3].padStart(2,'0');
    else if(ru)contextDate=ru[3]+'-'+ru[2].padStart(2,'0')+'-'+ru[1].padStart(2,'0');
-   for(const raw of text.split(/\r?\n/)){
+   for(const raw of lines){
      const line=raw.trim();if(!line)continue;
-     const g=line.match(/(?:[А-ЯA-Z]{1,5}[-–]?\d{2,4})/i);
-     if(g){const exact=groupOptions.find(v=>v.replace(/\s/g,'').toUpperCase()===g[0].replace(/[–]/g,'-').toUpperCase());if(exact)contextGroup=exact}
-     const pairMatch=line.match(/(?:^|\s|[№#])([1-6])\s*(?:[-.)]|пара|п\.|\s{2,})/i)||line.match(/(?:пара|урок)\s*№?\s*([1-6])/i);
-     if(!pairMatch)continue;
+     const g=line.match(/[А-ЯA-Z]{1,5}\s*[-–]\s*\d{2,4}/i);
+     if(g){const normalized=g[0].replace(/\s/g,'').replace('–','-').toUpperCase();contextGroup=groupOptions.find(v=>v.replace(/\s/g,'').toUpperCase()===normalized)||g[0].replace(/\s/g,'')}
+     const tm=line.match(/\b(?:[0-1]?\d|2[0-3])[:.][0-5]\d\b/);
+     const pairMatch=line.match(/(?:^|\s|№|#)([1-6])\s*(?:[-.)]|пара|п\.|\s{2,})/i)||line.match(/(?:пара|урок)\s*№?\s*([1-6])/i);
+     if(!g&&!pairMatch)continue;
      const sub=line.match(/(?:подгр(?:уппа)?\.?\s*|п\/г\s*|п\/гр\s*)([12])/i);
-     const cancel=/отмен|снят|не будет/i.test(line);
-     let subject=line.replace(g?.[0]||/^$/,'').replace(pairMatch[0],'').replace(/(?:подгр(?:уппа)?\.?\s*|п\/г\s*|п\/гр\s*)[12]/ig,'').trim();
-     const cabinet=subject.match(/(?:каб(?:инет)?\.?\s*|ауд\.?\s*|№\s*)(\d{2,4})\b/i);
-     const room=cabinet?.[1]||'';
-     if(cabinet)subject=subject.replace(cabinet[0],'').trim();
-     subject=subject.replace(/^[\s:;,.–-]+|[\s:;,.–-]+$/g,'');
-     result.push({date:contextDate,group:contextGroup,subgroup:sub?.[1]||'all',pair:Number(pairMatch[1]),subject:cancel?'':subject,room,cancelled:cancel});
+     const cancelled=/отмен|снят|не будет|по расписанию/i.test(line);
+     const roomMatch=line.match(/(?:каб(?:инет)?\.?\s*|ауд\.?\s*|№\s*)(\d{2,4})\b/i);
+     let subject=line.replace(g?.[0]||/^$/,'').replace(pairMatch?.[0]||/^$/,'').replace(tm?.[0]||/^$/,'').replace(roomMatch?.[0]||/^$/,'').replace(/(?:подгр(?:уппа)?\.?\s*|п\/г\s*|п\/гр\s*)[12]/ig,'').trim().replace(/^[\s:;,.–-]+|[\s:;,.–-]+$/g,'');
+     result.push({date:contextDate,group:contextGroup,subgroup:sub?.[1]||'all',pair:Number(pairMatch?.[1])||'',time:tm?.[0]||'',subject:cancelled?'':subject,room:roomMatch?.[1]||'',teacher:'',cancelled});
    }
-   return result.slice(0,80);
+   return result.slice(0,100);
+ }
+ function blankRow(){return {date:selectedDate(),group:'',subgroup:'all',pair:'',subject:'',room:'',teacher:'',time:'',cancelled:false,verified:false}}
+ async function prepareImage(url){
+   const image=new Image();image.src=url;await image.decode();
+   const scale=Math.min(2.8,2600/image.width);const canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);
+   const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0,canvas.width,canvas.height);
+   const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);let d=pixels.data;
+   for(let i=0;i<d.length;i+=4){const lum=.299*d[i]+.587*d[i+1]+.114*d[i+2];const v=Math.max(0,Math.min(255,(lum-105)*1.65+105));d[i]=d[i+1]=d[i+2]=v}
+   ctx.putImageData(pixels,0,0);return canvas;
  }
  async function loadTesseract(){
    if(window.Tesseract)return window.Tesseract;
@@ -904,21 +913,23 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
    if(!window.Tesseract)throw Error('Tesseract.js недоступен');return window.Tesseract;
  }
  run.onclick=async()=>{
-   const file=[...el('adminPhoto').files][0]||null;
-   // The existing attachment picker clears its input on change, so use its rendered preview URL.
-   const image=el('adminAttachmentPreviews').querySelector('img');
-   if(!image){statusText('Сначала добавь фотографию замен. PDF и Excel пока не распознаются.');return}
-   run.disabled=true;parsed=[];render();statusText('Загрузка модели OCR…');
-   let worker;
+   const images=[...el('adminAttachmentPreviews').querySelectorAll('img')];
+   if(!images.length){statusText('Сначала загрузи фотографии целой ведомости.');return}
+   run.disabled=true;parsed=[];render();statusText('Загрузка распознавания всех листов…');let worker;
    try{
      const t=await loadTesseract();
      worker=await t.createWorker('rus+eng',1,{logger:m=>{if(m.status==='recognizing text')statusText('Распознавание: '+Math.round((m.progress||0)*100)+'%')}});
-     const result=await worker.recognize(image.src);
-     parsed=parseLines(result.data.text||'');
-     if(!parsed.length){parsed=[{date:selectedDate(),group:el('adminSubGroup').value,subgroup:'all',pair:1,subject:'',room:'',teacher:'',time:'',cancelled:false}];statusText('Строки не определены автоматически. Добавлена пустая редактируемая строка. Проверь фото и заполни поля вручную.')}
-     else statusText('Найдено строк: '+parsed.length+'. Обязательно проверь каждую строку перед добавлением.');
-     render();
-   }catch(error){statusText('Ошибка распознавания: '+error.message)}
+     for(let i=0;i<images.length;i++){
+       statusText('Лист '+(i+1)+' из '+images.length+': распознавание…');
+       const canvas=await prepareImage(images[i].src);
+       const recognition=await worker.recognize(canvas);
+       const detected=parseLines(recognition.data.text||'');
+       parsed.push(...detected);
+     }
+     if(!parsed.length){parsed=Array.from({length:16},()=>blankRow());statusText('Рукописный текст не удалось надёжно распознать. Созданы 16 пустых строк для сверки всего листа; заполните их по фотографии.')}
+     else{while(parsed.length<16)parsed.push(blankRow());statusText('Подготовлено строк: '+parsed.length+'. Рукописный текст может быть ошибочным — проверь ВСЕ поля по фотографии и поставь галочки только у верных строк. Пустые строки предназначены для пропущенных записей.')}
+     render();el('adminOcrPanel').classList.add('ocrFullScreen');document.body.style.overflow='hidden';
+   }catch(error){statusText('Ошибка распознавания: '+error.message+'; можно заполнить таблицу вручную.');parsed=Array.from({length:16},()=>blankRow());render()}
    finally{if(worker)await worker.terminate();run.disabled=false}
  };
  add.onclick=()=>{
