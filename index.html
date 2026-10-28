@@ -813,6 +813,17 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
  const run=el('adminOcrRun'), status=el('adminOcrStatus'),rows=el('adminOcrRows'),add=el('adminOcrDraft');
  if(!run||!rows)return;
  let parsed=[];
+ const sheetLayout=document.createElement('div');
+ sheetLayout.id='ocrVerifyLayout';
+ sheetLayout.style.cssText='display:grid;grid-template-columns:minmax(210px,1fr) minmax(0,2fr);gap:14px;align-items:start;width:100%';
+ const preview=el('adminAttachmentPreviews');
+ if(preview){
+   preview.style.cssText='max-height:650px;overflow:auto;position:sticky;top:12px;border:1px solid #8885;border-radius:9px;padding:6px';
+   const imagesStyle=document.createElement('style');
+   imagesStyle.textContent='#ocrVerifyLayout #adminAttachmentPreviews img{width:100%;max-width:100%;height:auto;max-height:none;object-fit:contain;cursor:zoom-in}#ocrVerifyLayout #adminOcrRows{min-width:0} @media(max-width:740px){#ocrVerifyLayout{grid-template-columns:1fr!important}#ocrVerifyLayout #adminAttachmentPreviews{position:static!important;max-height:300px!important}}';
+   document.head.append(imagesStyle);
+   rows.before(sheetLayout);sheetLayout.append(preview,rows);
+ }
  const groupOptions=[...el('adminSubGroup').options].map(o=>o.value);
  const selectedDate=()=>el('adminSubForm').elements.date.value||new Date().toLocaleDateString('en-CA');
  function statusText(t){status.textContent=t}
