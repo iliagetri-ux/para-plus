@@ -9,7 +9,8 @@ Deno.serve(async req=>{
  if(!jwt)return json({error:"Войдите как администратор Supabase"},401);
  const supabaseUrl=Deno.env.get("SUPABASE_URL")||"";
  const publicKey=Deno.env.get("SUPABASE_ANON_KEY")||"";
- const secret=Deno.env.get("OCRSPACE_API_KEY")||"";
+ const secret=(Deno.env.get("OCRSPACE_API_KEY")||"").trim();
+ if(secret && !/^[\x21-\x7E]+$/.test(secret))return json({error:"OCRSPACE_API_KEY содержит недопустимые символы. В Supabase Secrets вставьте только ключ, без русских слов, кавычек и переносов строк."},503);
  if(!secret)return json({error:"OCR.space ещё не настроен: добавьте OCRSPACE_API_KEY в секреты Supabase"},503);
  const auth=await fetch(supabaseUrl+"/auth/v1/user",{headers:{apikey:publicKey,Authorization:"Bearer "+jwt}});
  if(!auth.ok)return json({error:"Нужен действующий вход администратора"},401);
@@ -20,7 +21,7 @@ Deno.serve(async req=>{
  if(!(image instanceof File)||!image.type.startsWith("image/")||image.size>5*1024*1024)return json({error:"Нужно изображение не более 5 МБ"},400);
  const form=new FormData();form.append("file",image,image.name||"sheet.jpg");form.append("OCREngine","3");form.append("language","auto");form.append("isTable","true");
  const response=await fetch("https://api.ocr.space/parse/image",{method:"POST",headers:{apikey:secret},body:form,signal:AbortSignal.timeout(45000)});
- const data=await response.json().catch(()=>({}));
+ const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{return json({error:"OCR.space вернул ответ не в формате JSON (HTTP "+response.status+"). Проверьте правильность API-ключа и параметры Engine."},502)}
  if(!response.ok||data.IsErroredOnProcessing)return json({error:String(data.ErrorMessage||data.ErrorDetails||"Ошибка OCR.space")},502);
  const text=(data.ParsedResults||[]).map((x:{ParsedText?:string})=>x.ParsedText||"").join("\n");
  return json({text:text.slice(0,45000)});
