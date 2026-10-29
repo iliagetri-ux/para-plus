@@ -1,4 +1,4 @@
-const CACHE_NAME = "para-plus-v2-28-ocrspace";
+const CACHE_NAME = "para-plus-v2-29-ocr-diagnostics";
 const ASSETS = ["./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
