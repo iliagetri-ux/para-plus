@@ -947,7 +947,7 @@ const groupSelector=e('group');groupSelector.addEventListener('change',renderAle
          method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:'sb_publishable_7-Jl9UbpSvcMuzYOrHoDXA_mvA4uJoR'},body:form
        });
        const json=await resp.json().catch(()=>({error:'Некорректный ответ сервера'}));
-       if(!resp.ok)throw Error(json.error||'OCR.space недоступен');
+       if(!resp.ok)throw Error('HTTP '+resp.status+': '+(json.error||json.message||json.msg||json.code||'OCR.space недоступен'));
        const detected=parseLines(json.text||'');parsed.push(...detected);
      }
      if(!parsed.length){parsed=Array.from({length:16},()=>blankRow());statusText('Текст получен, но строки автоматически не распределились. Таблицу можно заполнить вручную.')}
