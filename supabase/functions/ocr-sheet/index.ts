@@ -2,6 +2,8 @@ const ORIGIN = "https://iliagetri-ux.github.io";
 const cors = { "Access-Control-Allow-Origin": ORIGIN, "Access-Control-Allow-Methods":"POST, OPTIONS", "Access-Control-Allow-Headers":"authorization, apikey, content-type", "Vary":"Origin" };
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json"}});
 Deno.serve(async req=>{
+ let stage="start";
+ try {
  if(req.method==="OPTIONS")return new Response(null,{headers:cors});
  if(req.method!=="POST")return json({error:"Method not allowed"},405);
  if(req.headers.get("origin")!==ORIGIN)return json({error:"Origin not allowed"},403);
@@ -14,17 +16,26 @@ Deno.serve(async req=>{
  if(!secret)return json({error:"OCR.space ещё не настроен: добавьте OCRSPACE_API_KEY в секреты Supabase"},503);
  if(!/^[\x21-\x7E]+$/.test(publicKey))return json({error:"Некорректный SUPABASE_ANON_KEY: проверь переменные функции"},503);
  if(!/^[\x21-\x7E]+$/.test(jwt))return json({error:"Некорректный токен входа: войди в приложение заново"},401);
+ stage="supabase-auth";
  const auth=await fetch(supabaseUrl+"/auth/v1/user",{headers:{apikey:publicKey,Authorization:"Bearer "+jwt}});
  if(!auth.ok)return json({error:"Нужен действующий вход администратора"},401);
  const user=await auth.json();if(!user.id)return json({error:"Нет пользователя"},401);
+ stage="admin-role";
  const role=await fetch(supabaseUrl+"/rest/v1/app_admins?select=user_id&user_id=eq."+encodeURIComponent(user.id)+"&limit=1",{headers:{apikey:publicKey,Authorization:"Bearer "+jwt}});
  if(!role.ok||!(await role.json()).length)return json({error:"Нет прав администратора"},403);
+ stage="image-upload";
  const body=await req.formData();const image=body.get("image");
  if(!(image instanceof File)||!image.type.startsWith("image/")||image.size>5*1024*1024)return json({error:"Нужно изображение не более 5 МБ"},400);
  const form=new FormData();form.append("file",image,image.name||"sheet.jpg");form.append("OCREngine","3");form.append("language","auto");form.append("isTable","true");
+ stage="ocrspace-request";
  const response=await fetch("https://api.ocr.space/parse/image",{method:"POST",headers:{apikey:secret},body:form,signal:AbortSignal.timeout(45000)});
  const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{return json({error:"OCR.space вернул ответ не в формате JSON (HTTP "+response.status+"). Проверьте правильность API-ключа и параметры Engine."},502)}
  if(!response.ok||data.IsErroredOnProcessing)return json({error:String(data.ErrorMessage||data.ErrorDetails||"Ошибка OCR.space")},502);
  const text=(data.ParsedResults||[]).map((x:{ParsedText?:string})=>x.ParsedText||"").join("\n");
  return json({text:text.slice(0,45000)});
+ } catch(err){
+  const msg=err instanceof Error?err.message:String(err);
+  console.error("ocr-sheet failed at",stage,err instanceof Error?err.name:"error");
+  return json({error:"Сбой этапа "+stage+": "+(msg.includes("ByteString")?"недопустимое значение HTTP-заголовка":msg.includes("timed out")||msg.includes("Timeout")?"превышено время ожидания":msg.slice(0,180))},502);
+ }
 });
