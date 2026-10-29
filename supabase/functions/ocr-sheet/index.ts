@@ -12,6 +12,8 @@ Deno.serve(async req=>{
  const secret=(Deno.env.get("OCRSPACE_API_KEY")||"").trim();
  if(secret && !/^[\x21-\x7E]+$/.test(secret))return json({error:"OCRSPACE_API_KEY содержит недопустимые символы. В Supabase Secrets вставьте только ключ, без русских слов, кавычек и переносов строк."},503);
  if(!secret)return json({error:"OCR.space ещё не настроен: добавьте OCRSPACE_API_KEY в секреты Supabase"},503);
+ if(!/^[\x21-\x7E]+$/.test(publicKey))return json({error:"Некорректный SUPABASE_ANON_KEY: проверь переменные функции"},503);
+ if(!/^[\x21-\x7E]+$/.test(jwt))return json({error:"Некорректный токен входа: войди в приложение заново"},401);
  const auth=await fetch(supabaseUrl+"/auth/v1/user",{headers:{apikey:publicKey,Authorization:"Bearer "+jwt}});
  if(!auth.ok)return json({error:"Нужен действующий вход администратора"},401);
  const user=await auth.json();if(!user.id)return json({error:"Нет пользователя"},401);
