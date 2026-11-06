@@ -1,0 +1,11 @@
+{
+  "asset_meshes": 79,
+  "vertices_base": 130624,
+  "polygons_base": 122888,
+  "reference": "Compared front, back and 45-degree renders to the user reference; still stylized and below target fidelity",
+  "limitations": [
+    "Static posed mesh; no rig or LODs",
+    "Procedural micro-normal detail is Blender-only until baked; GLB contains packed albedo and roughness images plus metalness factors",
+    "No production retopology or collision clearance certification"
+  ]
+}
