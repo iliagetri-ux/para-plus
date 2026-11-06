@@ -79,7 +79,7 @@ def ornament(ob,rows,n=48,front=True):
  for k in rows:
   if k<nr:rim(ob,[k*n+j for j in range(n)]+[k*n],r=.002)
 
-# Human scale: 1.94 m helmet top, crown 2.18 m. Feet planted; eight-head body.
+# Human scale: 1.94 m helmet top, crown 2.07 m. Feet planted; eight-head body.
 loft('Padded arming torso',[(0,0,1.01,.15,.105),(0,0,1.12,.17,.11),(0,0,1.30,.20,.12),(0,0,1.49,.245,.125),(0,0,1.58,.17,.10)],dark)
 cu=loft('Cuirass | continuous peascod breast and back',[(0,0,1.17,.145,.108),(0,0,1.20,.16,.12),(0,0,1.30,.185,.145),(0,0,1.42,.235,.154),(0,0,1.50,.24,.13),(0,0,1.56,.16,.099)],steel,64,.018)
 ornament(cu,[0,5],64)
@@ -158,7 +158,7 @@ for k in range(nv):
  t=k/(nv-1)
  for j in range(nu):
   u=j/(nu-1);a=-1.13+2.26*u;width=.23+.28*t
-  x=sin(a)*width*1.45;y=.075+(.035+.22*t)*cos(a)+.028*sin(u*16*pi+1.7*t)*(0.3+t)+.025*sin(u*5*pi+2*t)*t
+  x=sin(a)*width*1.45;y=.075+(.035+.22*t)*cos(a)+.028*sin(u*16*pi+1.7*t)*(0.3+t)+.025*sin(u*5*pi+2*t)*t+.05*sin(pi*min(1,t/.12)/2)
   z=(1.56-.04*abs(sin(a)))*(1-t)+.055*t + .035*sin(u*23*pi)*t**10+.025*sin(u*59*pi)*t**18
   v.append((x,y,z))
 for k in range(nv-1):

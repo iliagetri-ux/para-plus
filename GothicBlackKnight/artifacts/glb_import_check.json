@@ -1,7 +1,7 @@
 {
   "glb_reimport": true,
   "meshes": 79,
-  "vertices": 397868,
+  "vertices": 397800,
   "triangles": 465516,
   "nonfinite_vertices": 0,
   "degenerate_faces": 0,
