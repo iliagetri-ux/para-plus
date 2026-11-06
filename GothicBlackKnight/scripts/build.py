@@ -12,6 +12,18 @@ def mat(name,col,metal,rough,noise=0):
   t=n.new('ShaderNodeTexNoise'); t.inputs['Scale'].default_value=noise; t.inputs['Detail'].default_value=3
   b=n.new('ShaderNodeBump'); b.inputs['Strength'].default_value=.22; b.inputs['Distance'].default_value=.0014
   m.node_tree.links.new(t.outputs['Fac'],b.inputs['Height']); m.node_tree.links.new(b.outputs['Normal'],p.inputs['Normal'])
+ # Packed image maps survive glTF export; procedural fine bump is supplemental.
+ size=256; pixels=[]; roughpixels=[]
+ rng=random.Random(name)
+ for yy in range(size):
+  for xx in range(size):
+   mottling=.85+.12*sin(xx*.17+sin(yy*.12))+.07*sin(yy*.29)+rng.uniform(-.08,.08)
+   pixels.extend([min(1,c*mottling) for c in col]+[1])
+   rr=max(.03,min(1,rough+.06*sin(xx*.17+yy*.11)+rng.uniform(-.045,.045)))
+   roughpixels.extend((rr,rr,rr,1))
+ for label,data,socket in [('Albedo',pixels,'Base Color'),('Roughness',roughpixels,'Roughness')]:
+  im=bpy.data.images.new(name+' '+label,width=size,height=size);im.colorspace_settings.name='Non-Color';im.pixels.foreach_set(data);im.pack()
+  tx=n.new('ShaderNodeTexImage');tx.image=im;m.node_tree.links.new(tx.outputs['Color'],p.inputs[socket])
  return m
 steel=mat('01 | Blackened forged steel',(.038,.044,.052),.88,.44,180)
 edge=mat('02 | Worn pewter edges',(.22,.195,.155),.83,.34,230)
@@ -30,7 +42,7 @@ def mesh(name,v,f,ma=steel,sub=0,thick=0):
  return ob
 
 def line(name,pts,r=.002,ma=edge):
- cu=bpy.data.curves.new(name,'CURVE');cu.dimensions='3D';cu.resolution_u=12;cu.bevel_depth=r;cu.bevel_resolution=2
+ cu=bpy.data.curves.new(name,'CURVE');cu.dimensions='3D';cu.resolution_u=12;cu.bevel_depth=r;cu.bevel_resolution=0
  sp=cu.splines.new('POLY');sp.points.add(len(pts)-1)
  for p,co in zip(sp.points,pts):p.co=(*co,1)
  ob=bpy.data.objects.new(name,cu);bpy.context.collection.objects.link(ob);ob.data.materials.append(ma);parts.append(ob);return ob
@@ -103,11 +115,12 @@ for s in [-1,1]:
    t=k/(nr-1)
    for j in range(nc):
     a=-pi*.60+pi*1.20*j/(nc-1);w=.12+.035*t
-    phi=.18+t*1.35; radius=.135-layer*.008
-    x=s*(.255+layer*.018+radius*sin(phi)*cos(a));y=(.11+.024*sin(phi))*sin(a);z=1.51-layer*.057+.125*cos(phi)-.018*(1+cos(4*a))*t**5
+    phi=.035+t*1.50; radius=.135-layer*.008
+    x=s*(.255+layer*.018+radius*sin(phi)*cos(a));y=.14*sin(phi)*sin(a);z=1.51-layer*.057+.125*cos(phi)-.018*(1+cos(4*a))*t**5
     v.append((x,y,z))
   for k in range(nr-1):
    for j in range(nc-1):a=k*nc+j;f.append((a,a+1,a+nc+1,a+nc))
+  if s>0:f=[tuple(reversed(face)) for face in f]
   ob=mesh(('Left' if s<0 else 'Right')+' pauldron lame '+str(layer),v,f,steel,1,.007)
   rim(ob,list(range((nr-1)*nc,nr*nc)),r=.0035);rim(ob,list(range(nc)),r=.003)
   for j in [4,10,16,22,28]:line('Pauldron chased arch',[v[k*nc+j] for k in range(nr)],.0018)
@@ -144,9 +157,9 @@ v=[];f=[];nu=96;nv=100
 for k in range(nv):
  t=k/(nv-1)
  for j in range(nu):
-  u=j/(nu-1);a=-1.13+2.26*u;width=.28+.23*t
-  x=sin(a)*width*1.45;y=.11+(.09+.13*t)*cos(a)+.028*sin(u*16*pi+1.7*t)*(0.3+t)
-  z=1.56*(1-t)+.055*t + .035*sin(u*23*pi)*t**10+.025*sin(u*59*pi)*t**18
+  u=j/(nu-1);a=-1.13+2.26*u;width=.23+.28*t
+  x=sin(a)*width*1.45;y=.075+(.035+.22*t)*cos(a)+.028*sin(u*16*pi+1.7*t)*(0.3+t)+.025*sin(u*5*pi+2*t)*t
+  z=(1.56-.04*abs(sin(a)))*(1-t)+.055*t + .035*sin(u*23*pi)*t**10+.025*sin(u*59*pi)*t**18
   v.append((x,y,z))
 for k in range(nv-1):
  for j in range(nu-1):
@@ -241,11 +254,11 @@ for o in assets:o.select_set(True)
 bpy.ops.export_scene.gltf(filepath=OUT+'/GothicBlackKnight.glb',export_format='GLB',use_selection=True,export_apply=True)
 bpy.ops.export_scene.fbx(filepath=OUT+'/GothicBlackKnight.fbx',use_selection=True,apply_unit_scale=True,bake_anim=False,add_leaf_bones=False)
 scene=bpy.context.scene
-scene.render.engine='CYCLES';scene.cycles.samples=48;scene.cycles.use_denoising=False
-scene.render.resolution_x=900;scene.render.resolution_y=1100;scene.render.resolution_percentage=100
+scene.render.engine='CYCLES';scene.cycles.samples=32;scene.cycles.use_denoising=False
+scene.render.resolution_x=800;scene.render.resolution_y=1000;scene.render.resolution_percentage=100
 scene.world.color=(.12,.12,.12)
 ground=mat('Studio floor',(.027,.032,.04),.05,.72)
-bpy.ops.mesh.primitive_plane_add(size=200);floor=bpy.context.object;floor.name='STUDIO floor';floor.data.materials.append(ground)
+bpy.ops.mesh.primitive_plane_add(size=200);floor=bpy.context.object;floor.name='STUDIO floor';floor.location.z=.03;floor.data.materials.append(ground)
 def area(name,loc,power,color,size):
  bpy.ops.object.light_add(type='AREA',location=loc);o=bpy.context.object;o.name=name;o.data.energy=power;o.data.color=color;o.data.shape='DISK';o.data.size=size;o.rotation_euler=(Vector((0,0,1.1))-o.location).to_track_quat('-Z','Y').to_euler()
 area('STUDIO softbox key',(-3,-4,5),650,(.78,.86,1),4)
@@ -254,7 +267,7 @@ area('STUDIO front fill',(3,-2,2),300,(.76,.85,1),3)
 bpy.ops.object.camera_add();cam=bpy.context.object;scene.camera=cam;cam.data.type='ORTHO';cam.data.ortho_scale=2.55
 scene.view_settings.view_transform='AgX'
 views={'Front':(0,-5,1.45),'Back':(0,5,1.45),'Side':(-5,0,1.45),'Right':(5,0,1.45),'45':(3,-5,2.0)}
-report={'asset_meshes':len(assets),'vertices_base':sum(len(o.data.vertices) for o in assets),'polygons_base':sum(len(o.data.polygons) for o in assets),'reference':'User supplied image; manual visual comparison pending','limitations':['Static posed mesh; no rig or LODs','Procedural micro-normal detail is Blender-only until baked; GLB contains PBR factors','No production retopology or collision clearance certification']}
+report={'asset_meshes':len(assets),'vertices_base':sum(len(o.data.vertices) for o in assets),'polygons_base':sum(len(o.data.polygons) for o in assets),'reference':'Compared front, back and 45-degree renders to the user reference; still stylized and below target fidelity','limitations':['Static posed mesh; no rig or LODs','Procedural micro-normal detail is Blender-only until baked; GLB contains packed albedo and roughness images plus metalness factors','No production retopology or collision clearance certification']}
 with open(OUT+'/validation.json','w') as f:json.dump(report,f,indent=2)
 bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend')
 for name,loc in views.items():
