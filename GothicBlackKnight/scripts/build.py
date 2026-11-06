@@ -13,7 +13,7 @@ def mat(name,col,metal,rough,noise=0):
   b=n.new('ShaderNodeBump'); b.inputs['Strength'].default_value=.22; b.inputs['Distance'].default_value=.0014
   m.node_tree.links.new(t.outputs['Fac'],b.inputs['Height']); m.node_tree.links.new(b.outputs['Normal'],p.inputs['Normal'])
  return m
-steel=mat('01 | Blackened forged steel',(.038,.044,.052),.88,.32,180)
+steel=mat('01 | Blackened forged steel',(.038,.044,.052),.88,.44,180)
 edge=mat('02 | Worn pewter edges',(.22,.195,.155),.83,.34,230)
 dark=mat('03 | Recessed steel',(.012,.016,.021),.65,.46,150)
 cloth=mat('04 | Charcoal woven wool',(.018,.014,.016),0,.94,320)
@@ -103,7 +103,8 @@ for s in [-1,1]:
    t=k/(nr-1)
    for j in range(nc):
     a=-pi*.60+pi*1.20*j/(nc-1);w=.12+.035*t
-    x=s*(.235+layer*.025+(.06+.095*t)*cos(a));y=w*sin(a);z=1.565-layer*.067+.07*(1-t)-.07*t+.018*cos(4*a)*t
+    phi=.18+t*1.35; radius=.135-layer*.008
+    x=s*(.255+layer*.018+radius*sin(phi)*cos(a));y=(.11+.024*sin(phi))*sin(a);z=1.51-layer*.057+.125*cos(phi)-.018*(1+cos(4*a))*t**5
     v.append((x,y,z))
   for k in range(nr-1):
    for j in range(nc-1):a=k*nc+j;f.append((a,a+1,a+nc+1,a+nc))
@@ -111,7 +112,7 @@ for s in [-1,1]:
   rim(ob,list(range((nr-1)*nc,nr*nc)),r=.0035);rim(ob,list(range(nc)),r=.003)
   for j in [4,10,16,22,28]:line('Pauldron chased arch',[v[k*nc+j] for k in range(nr)],.0018)
  # hanging left arm; right elbow bends outward toward sword
- sh=(s*.29,0,1.49);el=(s*.35,-.005,1.23);wr=(s*.36,-.055,1.02) if s<0 else (s*.61,-.10,1.40)
+ sh=(s*.29,0,1.49);el=(s*.35,-.005,1.23);wr=(s*.36,-.055,1.02) if s<0 else (s*.61,-.10,1.34)
  limb('Sleeve',sh,el,[(0,.068,.07),(.5,.075,.072),(1,.06,.06)],dark)
  limb('Rerebrace',sh,el,[(.1,.082,.079),(.4,.077,.076),(.9,.062,.061)],steel)
  limb('Elbow couter',el,tuple(Vector(el)+Vector((0,0,.08))),[(0,.072,.07),(.35,.085,.08),(1,.065,.065)],steel)
@@ -202,6 +203,29 @@ mesh('Greatsword | sculpted crossguard',v,f,steel,0,0)
 line('Guard chased border',v[:n]+[v[0]],.0025,edge)
 medallion('Guard garnet setting',(sx,sy-.022,1.031),.019)
 loft('Greatsword | pommel',[(sx,sy,1.27,.017,.017),(sx,sy,1.30,.029,.026),(sx,sy,1.33,.022,.021),(sx,sy,1.345,.005,.005)],steel,24,.06)
+# Fine foliate chasing projected onto actual plate surfaces.
+from mathutils.bvhtree import BVHTree
+for ob in list(parts):
+ if ob.type!='MESH' or not any(word in ob.name for word in ['Cuirass','cuisse','Greave','pauldron','bevor','Vambrace','Rerebrace']):continue
+ verts=[v.co.copy() for v in ob.data.vertices]; faces=[list(p.vertices) for p in ob.data.polygons]
+ tree=BVHTree.FromPolygons(verts,faces)
+ xmin=min(v.x for v in verts);xmax=max(v.x for v in verts);zmin=min(v.z for v in verts);zmax=max(v.z for v in verts)
+ for ix in range(max(1,int((xmax-xmin)/.032))):
+  for iz in range(max(1,int((zmax-zmin)/.043))):
+   cx=xmin+.018+ix*.032;cz=zmin+.022+iz*.043
+   for mirror in [-1,1]:
+    pts=[]
+    for j in range(27):
+     t=j/26;ang=t*1.8*pi;rr=.014*(1-.78*t)
+     x=cx+mirror*rr*sin(ang);z=cz+rr*cos(ang)
+     hit,normal,idx,dist=tree.ray_cast(Vector((x,-1,z)),Vector((0,1,0)))
+     if hit is not None:pts.append(hit+normal*.00065)
+    if len(pts)>5:line('Surface chased acanthus',pts,.00065,edge)
+# Central pointed brow applique, following visor skull rather than an exposed round dome.
+v=[(-.107,-.101,1.84),(-.055,-.114,1.82),(0,-.125,1.785),(.055,-.114,1.82),(.107,-.101,1.84),(.09,-.10,1.88),(0,-.109,1.91),(-.09,-.10,1.88)]
+mesh('Helmet | pointed gothic brow',v,[tuple(range(8))],steel,0,.004)
+line('Brow worn border',v+[v[0]],.002,edge)
+
 # Consolidate decorative curve objects into one mesh for manageable asset hierarchy.
 curves=[o for o in parts if o.type=='CURVE'];bpy.ops.object.select_all(action='DESELECT')
 for o in curves:o.select_set(True)
@@ -217,7 +241,7 @@ for o in assets:o.select_set(True)
 bpy.ops.export_scene.gltf(filepath=OUT+'/GothicBlackKnight.glb',export_format='GLB',use_selection=True,export_apply=True)
 bpy.ops.export_scene.fbx(filepath=OUT+'/GothicBlackKnight.fbx',use_selection=True,apply_unit_scale=True,bake_anim=False,add_leaf_bones=False)
 scene=bpy.context.scene
-scene.render.engine='CYCLES';scene.cycles.samples=24;scene.cycles.use_denoising=False
+scene.render.engine='CYCLES';scene.cycles.samples=48;scene.cycles.use_denoising=False
 scene.render.resolution_x=900;scene.render.resolution_y=1100;scene.render.resolution_percentage=100
 scene.world.color=(.12,.12,.12)
 ground=mat('Studio floor',(.027,.032,.04),.05,.72)
@@ -232,6 +256,7 @@ scene.view_settings.view_transform='AgX'
 views={'Front':(0,-5,1.45),'Back':(0,5,1.45),'Side':(-5,0,1.45),'Right':(5,0,1.45),'45':(3,-5,2.0)}
 report={'asset_meshes':len(assets),'vertices_base':sum(len(o.data.vertices) for o in assets),'polygons_base':sum(len(o.data.polygons) for o in assets),'reference':'User supplied image; manual visual comparison pending','limitations':['Static posed mesh; no rig or LODs','Procedural micro-normal detail is Blender-only until baked; GLB contains PBR factors','No production retopology or collision clearance certification']}
 with open(OUT+'/validation.json','w') as f:json.dump(report,f,indent=2)
+bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend')
 for name,loc in views.items():
  cam.location=loc;cam.rotation_euler=(Vector((.08,0,1.08))-cam.location).to_track_quat('-Z','Y').to_euler();scene.render.filepath=OUT+'/Preview_'+name+'.png'
  bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend') if name=='45' else None
