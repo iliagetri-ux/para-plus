@@ -11,10 +11,13 @@ for o in objects:
  if not o.data.uv_layers:report['uv_missing'].append(o.name)
 with open(out+'/glb_import_check.json','w') as f:json.dump(report,f,indent=2)
 print(json.dumps(report))
+assert report['nonfinite_vertices']==0, 'Non-finite coordinates'
+assert report['degenerate_faces']==0, 'Degenerate faces'
+assert not report['uv_missing'], 'Missing UV layers'
 # Independent render of the imported GLB, without relying on the source scene.
-s=bpy.context.scene;s.render.engine='CYCLES';s.cycles.samples=8;s.cycles.use_denoising=False
+s=bpy.context.scene;s.render.engine='CYCLES';s.cycles.samples=24;s.cycles.use_denoising=os.environ.get('KNIGHT_DENOISE')=='1'
 s.render.resolution_x=400;s.render.resolution_y=520;s.render.resolution_percentage=100;s.world.color=(.2,.2,.2)
-bpy.ops.object.camera_add(location=(3,-5,2));c=bpy.context.object;c.rotation_euler=(Vector((.05,0,1.08))-c.location).to_track_quat('-Z','Y').to_euler();c.data.type='ORTHO';c.data.ortho_scale=2.5;s.camera=c
+bpy.ops.object.camera_add(location=(-3.92,-4,1.45));c=bpy.context.object;c.rotation_euler=(Vector((.05,0,1.08))-c.location).to_track_quat('-Z','Y').to_euler();c.data.type='ORTHO';c.data.ortho_scale=2.5;s.camera=c
 for pos,power in [((-3,-4,4),600),((3,1,4),900)]:
  bpy.ops.object.light_add(type='AREA',location=pos);o=bpy.context.object;o.data.energy=power;o.data.size=4;o.rotation_euler=(Vector((0,0,1))-o.location).to_track_quat('-Z','Y').to_euler()
 s.render.filepath=out+'/GLB_Import_Preview.png';bpy.ops.render.render(write_still=True)

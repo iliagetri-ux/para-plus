@@ -1,4 +1,5 @@
-import bpy, math, os, random, json
+import bpy, math, os, random, json, hashlib, time
+import numpy as np
 from mathutils import Vector
 from math import sin,cos,pi
 random.seed(19)
@@ -8,11 +9,7 @@ parts=[]
 def mat(name,col,metal,rough,noise=0):
  m=bpy.data.materials.new(name); m.diffuse_color=(*col,1); m.use_nodes=True
  n=m.node_tree.nodes; p=n.get('Principled BSDF'); p.inputs['Base Color'].default_value=(*col,1); p.inputs['Metallic'].default_value=metal; p.inputs['Roughness'].default_value=rough
- if noise:
-  t=n.new('ShaderNodeTexNoise'); t.inputs['Scale'].default_value=noise; t.inputs['Detail'].default_value=3
-  b=n.new('ShaderNodeBump'); b.inputs['Strength'].default_value=.22; b.inputs['Distance'].default_value=.0014
-  m.node_tree.links.new(t.outputs['Fac'],b.inputs['Height']); m.node_tree.links.new(b.outputs['Normal'],p.inputs['Normal'])
- # Packed image maps survive glTF export; procedural fine bump is supplemental.
+ # Packed color, roughness and tangent normal maps survive glTF export.
  size=256; pixels=[]; roughpixels=[]
  rng=random.Random(name)
  for yy in range(size):
@@ -24,13 +21,29 @@ def mat(name,col,metal,rough,noise=0):
  for label,data,socket in [('Albedo',pixels,'Base Color'),('Roughness',roughpixels,'Roughness')]:
   im=bpy.data.images.new(name+' '+label,width=size,height=size);im.colorspace_settings.name='Non-Color';im.pixels.foreach_set(data);im.pack()
   tx=n.new('ShaderNodeTexImage');tx.image=im;m.node_tree.links.new(tx.outputs['Color'],p.inputs[socket])
+ if noise:
+  # Tileable tangent normals, shared by Blender/glTF/USDZ rather than Blender-only noise.
+  dim=256;rg=np.random.default_rng(sum((i+1)*ord(c) for i,c in enumerate(name)))
+  yy,xx=np.mgrid[0:dim,0:dim]/dim
+  if 'woven' in name:
+   height=.16*(np.sin(2*pi*xx*64)+np.sin(2*pi*yy*64))+rg.standard_normal((dim,dim))*.025
+  else:
+   height=rg.standard_normal((dim,dim))*.10+.025*np.sin(2*pi*(xx*47+yy*19))
+  nx=(np.roll(height,1,axis=1)-np.roll(height,-1,axis=1))*.65
+  ny=(np.roll(height,1,axis=0)-np.roll(height,-1,axis=0))*.65
+  nz=np.ones_like(nx);length=np.sqrt(nx*nx+ny*ny+nz*nz)
+  pixels=np.stack((nx/length*.5+.5,ny/length*.5+.5,nz/length*.5+.5,np.ones_like(nx)),axis=-1).astype(np.float32)
+  normal_image=bpy.data.images.new(name+' Tangent normal',width=dim,height=dim);normal_image.colorspace_settings.name='Non-Color';normal_image.pixels.foreach_set(pixels.ravel());normal_image.pack()
+  tx=n.new('ShaderNodeTexImage');tx.image=normal_image
+  normal=n.new('ShaderNodeNormalMap');normal.inputs['Strength'].default_value=.55 if metal>.5 else .28
+  m.node_tree.links.new(tx.outputs['Color'],normal.inputs['Color']);m.node_tree.links.new(normal.outputs['Normal'],p.inputs['Normal'])
  return m
 steel=mat('01 | Blackened forged steel',(.026,.030,.036),.9,.43,180)
 edge=mat('02 | Worn pewter edges',(.13,.125,.114),.85,.38,230)
 dark=mat('03 | Recessed steel',(.012,.016,.021),.65,.46,150)
 cloth=mat('04 | Charcoal woven wool',(.009,.008,.010),0,.97,320)
 leather=mat('05 | Oxblood leather',(.035,.013,.012),0,.68,180)
-ruby=mat('06 | Garnet',(.19,.005,.008),.45,.19)
+ruby=mat('06 | Garnet',(.19,.005,.008),0,.19)
 
 def mesh(name,v,f,ma=steel,sub=0,thick=0):
  me=bpy.data.meshes.new(name); me.from_pydata(v,[],f); me.update(); ob=bpy.data.objects.new(name,me); bpy.context.collection.objects.link(ob); ob.data.materials.append(ma); parts.append(ob)
@@ -66,6 +79,31 @@ def limb(name,a,b,rads,ma=steel,flute=.035):
  for v in ob.data.vertices:v.co=q@v.co+Vector(a)
  return ob
 
+def digit(name,control,length_scale=1):
+ # A curved articulated finger is one swept quad surface, with knuckle ridges.
+ centers=[]
+ for k in range(len(control)-1):
+  a=Vector(control[max(0,k-1)]);b=Vector(control[k]);c=Vector(control[k+1]);d=Vector(control[min(len(control)-1,k+2)])
+  for j in range(4):
+   t=j/4;centers.append(.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t))
+ centers.append(Vector(control[-1]));v=[];f=[];n=12
+ for k,center in enumerate(centers):
+  t=k/(len(centers)-1);tangent=(centers[min(k+1,len(centers)-1)]-centers[max(0,k-1)]).normalized()
+  side=Vector((1,0,0));side=(side-tangent*side.dot(tangent)).normalized();up=tangent.cross(side).normalized()
+  radius=(.0105-.003*t)*length_scale*(1+.17*math.exp(-((t-.27)/.045)**2)+.15*math.exp(-((t-.63)/.045)**2))
+  for j in range(n):
+   angle=2*pi*j/n;v.append(center+side*(radius*cos(angle))+up*(radius*1.1*sin(angle)))
+ for k in range(len(centers)-1):
+  for j in range(n):a=k*n+j;b=k*n+(j+1)%n;f.append((a,b,b+n,a+n))
+ f.extend([tuple(range(n-1,-1,-1)),tuple((len(centers)-1)*n+j for j in range(n))])
+ ob=mesh(name,v,f,steel);ob.data.materials.append(dark);ob.data.materials.append(edge)
+ for face in ob.data.polygons:
+  if face.index<(len(centers)-1)*n:
+   t=(face.index//n+.5)/(len(centers)-1)
+   if abs(t-.32)<.035 or abs(t-.68)<.035:face.material_index=1
+   elif abs(t-.27)<.035 or abs(t-.63)<.035:face.material_index=2
+ return ob
+
 def rim(ob,indices,name='Rolled plate edge',r=.0025):line(name,[ob.data.vertices[i].co[:] for i in indices],r)
 def ornament(ob,rows,n=48,front=True):
  # Repeating pointed-arch chased tracery follows surface; no floating ornaments.
@@ -73,19 +111,45 @@ def ornament(ob,rows,n=48,front=True):
  for k in rows:
   if k<nr:rim(ob,[k*n+j for j in range(n)]+[k*n],r=.002)
 
-# Human scale: 1.94 m helmet top, crown 2.07 m. Feet planted; eight-head body.
-loft('Padded arming torso',[(0,0,1.01,.15,.105),(0,0,1.12,.17,.11),(0,0,1.30,.20,.12),(0,0,1.49,.245,.125),(0,0,1.58,.17,.10)],dark)
+# Human scale: 1.975 m helmet top, crown 2.05 m. Feet planted; eight-head body.
+loft('Padded arming torso',[(0,0,1.01,.15,.105),(0,0,1.12,.17,.11),(0,0,1.30,.20,.12),(0,0,1.57,.245,.125),(0,0,1.65,.17,.10)],dark)
 cu=loft('Cuirass | forged breast and back',[(0,0,1.165,.153,.105),(0,-.008,1.205,.164,.12),(0,-.005,1.255,.168,.127),(0,0,1.32,.193,.137),(0,0,1.39,.224,.149),(0,0,1.455,.243,.141),(0,0,1.505,.229,.12),(0,0,1.545,.173,.098)],steel,64,.008)
 # medial keel and anatomical pectoral sweep are formed in the surface itself
 for v in cu.data.vertices:
  front=max(0,-v.co.y/.15); waist=math.exp(-((v.co.z-1.28)/.13)**2)
  v.co.y-=.018*math.exp(-(v.co.x/.045)**2)*front*waist
  v.co.z+=.018*(abs(v.co.x)/.245)**1.2*math.exp(-((v.co.z-1.45)/.10)**2)
+for v in cu.data.vertices:v.co.z+=.08*min(1,max(0,(v.co.z-1.18)/.36))
 ornament(cu,[0,7],64)
+# Two fitted plackart leaves: shaped sheet metal with a pointed upper seam and a medial keel.
+from mathutils.bvhtree import BVHTree
+chest_tree=BVHTree.FromPolygons([v.co.copy() for v in cu.data.vertices],[list(p.vertices) for p in cu.data.polygons])
+for side in [-1,1]:
+ vertices=[];faces=[];resolution=25
+ for row in range(resolution):
+  t=row/(resolution-1)
+  for col in range(resolution):
+   u=col/(resolution-1);x=side*(.003+.178*u)*(.85+.15*t)
+   lower=1.205+.045*u;upper=1.39+.085*(1-u)**2+.03*sin(pi*u)
+   z=lower*(1-t)+upper*t
+   hit,normal,idx,distance=chest_tree.ray_cast(Vector((x,-1,z)),Vector((0,1,0)))
+   assert hit is not None, 'Plackart outside breastplate'
+   ridge=.008+.010*sin(pi*u)**2*sin(pi*t)+.004*max(0,cos(u*5*pi))**6*sin(pi*t)
+   vertices.append((x,hit.y-ridge,z))
+ for row in range(resolution-1):
+  for col in range(resolution-1):
+   a=row*resolution+col;face=(a,a+1,a+resolution+1,a+resolution)
+   faces.append(face if side>0 else tuple(reversed(face)))
+ plackart=mesh('Plackart | pointed fitted breast leaf',vertices,faces,steel,0,.004)
+ for row in [0,resolution-1]:rim(plackart,[row*resolution+j for j in range(resolution)],r=.0023)
+ for col in [0,resolution-1]:rim(plackart,[j*resolution+col for j in range(resolution)],r=.0018)
+
 for k in range(4):
  z=1.10+k*.034
  ob=loft('Overlapping articulated fauld %02d'%k,[(0,0,z,.185-k*.009,.125),(0,0,z+.045,.17-k*.008,.12)],steel,48,.018);ornament(ob,[0])
-loft('Gorget | fitted neck articulation',[(0,0,1.535,.122,.093),(0,0,1.57,.096,.082),(0,0,1.65,.079,.072)],dark,48,.012)
+neck=loft('Gorget | fitted neck articulation',[(0,0,1.61,.122,.093),(0,0,1.655,.096,.082),(0,0,1.70,.079,.072)],dark,48,.012);ornament(neck,[0,1,2])
+loft('Mantle | fitted neck wrap',[(0,0,1.62,.13,.105),(0,0,1.645,.12,.10),(0,0,1.665,.108,.092),(0,0,1.69,.105,.09),(0,0,1.695,.095,.086),(0,0,1.702,.087,.082),(0,0,1.71,.083,.080)],cloth,48,.02)
+helmet_start=len(parts)
 # Helmet: shaped rear skull plus an angular, pointed closed face harness.
 loft('Helmet | enclosed rear skull',[(0,.02,1.655,.060,.064),(0,.014,1.73,.088,.083),(0,.014,1.83,.103,.087),(0,.016,1.91,.083,.077),(0,.016,1.945,.038,.04),(0,.016,1.95,.006,.008)],steel,64,.012)
 def visor_patch(name,rows):
@@ -118,9 +182,14 @@ ob=mesh('Crown | continuous ogival coronet',v,f,steel,0,.004)
 rim(ob,[4*n+j for j in range(n)]+[4*n],r=.0018)
 rim(ob,list(range(n))+[0],r=.0023)
 for j in range(0,n,21):line('Crown rising ridge',[v[k*n+j] for k in range(5)],.0012)
+# Correct helmet-to-body proportion while preserving crown height.
+for ob in parts[helmet_start:]:
+ points=[v.co for v in ob.data.vertices] if ob.type=='MESH' else [p.co for spline in ob.data.splines for p in spline.points]
+ for co in points:co.z=2.05-.86*(2.05-co.z)
+
 # Shaped pointed pauldrons using angular patches, each is a whole thick plate.
 for s in [-1,1]:
- limb('Padded shoulder attachment',(s*.19,0,1.505),(s*.29,0,1.565),[(0,.086,.082),(.5,.096,.095),(1,.075,.073)],dark,0)
+ limb('Padded shoulder attachment',(s*.19,0,1.585),(s*.29,0,1.645),[(0,.086,.082),(.5,.096,.095),(1,.075,.073)],dark,0)
  for layer in range(3):
   v=[];f=[];nr=9;nc=33
   for k in range(nr):
@@ -128,7 +197,7 @@ for s in [-1,1]:
    for j in range(nc):
     a=-pi*.60+pi*1.20*j/(nc-1);w=.12+.035*t
     phi=.035+t*1.57; radius=.15-layer*.012
-    x=s*(.255+layer*.018+radius*sin(phi)*cos(a));y=.14*sin(phi)*sin(a);z=1.51-layer*.057+.132*cos(phi)-.028*(.5+.5*cos(3*a))*t**5+.025*max(0,cos(a))**12*(1-t)**4
+    x=s*(.255+layer*.018+radius*sin(phi)*cos(a));y=.14*sin(phi)*sin(a);z=1.59-layer*.057+.132*cos(phi)-.028*(.5+.5*cos(3*a))*t**5+.025*max(0,cos(a))**12*(1-t)**4
     v.append((x,y,z))
   for k in range(nr-1):
    for j in range(nc-1):a=k*nc+j;f.append((a,a+1,a+nc+1,a+nc))
@@ -137,18 +206,32 @@ for s in [-1,1]:
   rim(ob,list(range((nr-1)*nc,nr*nc)),r=.0035);rim(ob,list(range(nc)),r=.003)
   for j in [4,10,16,22,28]:line('Pauldron chased arch',[v[k*nc+j] for k in range(nr)],.0018)
  # hanging left arm; right elbow bends outward toward sword
- sh=(s*.29,0,1.49);el=(s*.35,-.005,1.23);wr=(s*.36,-.055,1.02) if s<0 else (s*.61,-.10,1.34)
+ sh=(s*.29,0,1.57);el=(s*.35,-.005,1.23);wr=(s*.36,-.055,1.02) if s<0 else (s*.61,-.10,1.34)
  limb('Sleeve',sh,el,[(0,.068,.07),(.5,.075,.072),(1,.06,.06)],dark)
  limb('Rerebrace',sh,el,[(.1,.082,.079),(.4,.077,.076),(.9,.062,.061)],steel)
- limb('Elbow couter',el,tuple(Vector(el)+Vector((0,0,.08))),[(0,.072,.07),(.35,.085,.08),(1,.065,.065)],steel)
- limb('Vambrace',el,wr,[(.12,.066,.066),(.4,.061,.06),(.85,.045,.047),(1,.051,.052)],steel)
+ elbow=limb('Elbow couter',tuple(Vector(el)+Vector((0,0,-.035))),tuple(Vector(el)+Vector((0,0,.085))),[(0,.035,.048),(.28,.065,.074),(.52,.079,.085),(.76,.069,.073),(1,.05,.058)],steel,0)
+ for vertex in elbow.data.vertices:
+  a=2*pi*(vertex.index%32)/32;ridge=max(0,cos(a))**10
+  vertex.co.y-=.018*ridge;vertex.co.x+=s*.028*max(0,s*sin(a))**8
+ ornament(elbow,[0,4],32)
+ limb('Vambrace',el,wr,[(.12,.064,.062),(.28,.068,.061),(.6,.053,.052),(.85,.043,.046),(1,.049,.051)],steel)
  limb('Wrist cuff',el,wr,[(.89,.052,.054),(1.05,.057,.054)],edge)
  handend=Vector(wr)+Vector((0,-.012,-.085)) if s<0 else Vector(wr)+Vector((.02,-.03,.055))
  limb('Gauntlet metacarpal plate',wr,handend,[(0,.048,.035),(.45,.051,.034),(1,.043,.028)],steel)
  for finger in range(4):
-  start=handend+Vector(((finger-1.5)*.023,0,0));end=start+Vector((.006,-.025,-.078 if s<0 else -.069))
-  limb('Articulated individual finger',start,end,[(0,.010,.013),(.30,.011,.014),(.35,.012,.015),(.62,.010,.012),(.68,.011,.014),(1,.007,.009)],steel,0)
- start=Vector(wr)+Vector((-.043,0,-.02));end=start+Vector((-.025,-.032,-.043));limb('Opposable thumb',start,end,[(0,.015,.016),(.5,.014,.015),(1,.009,.012)],steel,0)
+  start=handend+Vector(((finger-1.5)*.022,0,.004))
+  if s<0:
+   length=[.074,.084,.079,.061][finger]
+   points=[start,start+Vector((0,-.004,-length*.28)),start+Vector((0,-.012,-length*.58)),start+Vector((.002,-.021,-length*.85)),start+Vector((.003,-.030,-length))]
+  else:
+   length=[.94,1.0,.96,.80][finger]
+   points=[start,start+Vector((0,-.023,-.015))*length,start+Vector((0,-.033,-.040))*length,start+Vector((0,-.022,-.063))*length,start+Vector((0,-.003,-.070))*length]
+  digit('Gauntlet | curled articulated finger',points,.86 if finger==3 else 1)
+ if s<0:
+  start=Vector(wr)+Vector((.039,-.01,-.037));points=[start,start+Vector((.012,-.015,-.020)),start+Vector((.006,-.025,-.042)),start+Vector((-.004,-.026,-.049))]
+ else:
+  start=Vector(wr)+Vector((-.034,.012,.015));points=[start,Vector((.585,-.112,1.342)),Vector((.60,-.145,1.337)),Vector((.62,-.15,1.348))]
+ digit('Gauntlet | opposed thumb',points,1.25)
  # Legs, cuisses -> knee -> greaves, each fitted to anatomy.
  leg_start=len(parts)
  x=s*.115
@@ -158,7 +241,14 @@ for s in [-1,1]:
   ob=loft('Hip tasset overlapping plate',[(x,-.015,.88+k*.061,.091,.092),(x,-.008,.95+k*.061,.092,.091)],steel,48,.015)
   for j in range(48):ob.data.vertices[j].co.z-=.035*max(0,cos(2*pi*j/48))**6
   ornament(ob,[0])
- ob=loft('Pointed poleyn',[(x,-.018,.53,.025,.05),(x,-.025,.57,.07,.08),(x,-.027,.62,.079,.09),(x,-.012,.67,.064,.073)],steel,48,.06);ornament(ob,[0,3])
+ ob=loft('Pointed poleyn',[(x,-.018,.52,.027,.049),(x,-.025,.57,.065,.077),(x,-.027,.615,.074,.087),(x,-.012,.66,.059,.069),(x,0,.685,.04,.053)],steel,48,0)
+ for vertex in ob.data.vertices:
+  a=2*pi*(vertex.index%48)/48;front=max(0,cos(a))
+  vertex.co.y-=.022*front**12
+  if vertex.index<48:vertex.co.z-=.028*front**8
+  if vertex.index>=4*48:vertex.co.z+=.028*front**8
+  vertex.co.x+=s*.025*max(0,s*sin(a))**10*sin(pi*(vertex.index//48)/4)
+ ornament(ob,[0,4])
  ob=loft('Greave | calf and tibial crest',[(x,0,.13,.044,.052),(x,0,.20,.045,.056),(x,.012,.35,.066,.072),(x,.012,.46,.061,.067),(x,0,.54,.051,.056)],steel,48,.075);ornament(ob,[0,4])
  # sabaton horizontal contour rings, layered toes in front
  ob=loft('Sabatons | shaped plated boot',[(x,-.06,.035,.072,.15),(x,-.065,.055,.075,.155),(x,-.06,.085,.066,.14),(x,-.015,.13,.048,.075),(x,0,.17,.045,.054)],steel,48,.012);ornament(ob,[0,2])
@@ -182,13 +272,12 @@ for k in range(nv):
  for j in range(nu):
   u=j/(nu-1);a=-1.13+2.26*u
   width=.255+.25*t+.045*sin(pi*t)
-  x=sin(a)*width*1.43-.065*t*t*(1-u)**4
-  envelope=.012+.033*t+.018*sin(pi*t)
-  phase=u*13*pi+1.8*t+.7*sin(u*7+2*t)
-  y=.13+.20*t+.065*sin(pi*t)*(cos(a)**2)+envelope*sin(phase)+.024*t*sin(u*5*pi+t*3)
-  if t<.28:y=max(y,.118+.055*sin(pi*min(1,t/.10)/2))
-  z=(1.565-.035*cos(a))*(1-t)+.035*t
-  z+=t**12*(.115*max(0,sin(17*u+1))**8+.055*max(0,sin(41*u))**10)
+  x=sin(a)*width*1.35-.075*t*t-.035*t*t*(1-u)**4
+  envelope=(.012+.033*t+.018*sin(pi*t))*(.75+.25*sin(u*9+1)**2)
+  phase=u*13*pi+2.1*sin(2*t+3*u)+.45*sin(u*19+t*4)
+  y=.085+.052*abs(sin(a))*(1-t)**3+.10*(1-math.exp(-t*20))+.14*t+.035*sin(pi*t)*cos(a)**2+envelope*sin(phase)+.024*t*sin(u*5*pi+t*3)
+  z=(1.59+.11*cos(a)**4)*(1-t)+.035*t
+  z+=t**12*(.10*max(0,sin(17*u+1))**8+.055*max(0,sin(41*u))**10+.025*max(0,sin(97*u+1))**4+.015*max(0,sin(177*u))**4)
   z+=.035*sin(pi*t)*sin(u*9+3*t)
   v.append((x,y,z))
 for k in range(nv-1):
@@ -197,14 +286,19 @@ for k in range(nv-1):
   tear=any(((u-cu)/ru)**2+((t-ct)/rt)**2 < 1+.18*sin(j*7+k*3) for cu,ct,ru,rt in [(.10,.94,.026,.034),(.79,.91,.017,.047),(.91,.975,.024,.045),(.28,.989,.012,.027)])
   if tear:continue
   a=k*nu+j;f.append((a,a+1,a+nu+1,a+nu))
-mesh('Cape | tailored drape and sparse torn openings',v,f,cloth,1,.0014)
+cape_ob=mesh('Cape | tailored drape and sparse torn openings',v,f,cloth,1,.0014)
+import bmesh
+bm=bmesh.new();bm.from_mesh(cape_ob.data)
+for vertex in list(bm.verts):
+ if not vertex.link_faces:bm.verts.remove(vertex)
+bm.to_mesh(cape_ob.data);bm.free()
 # Asymmetric folded mantle across upper chest
 for layer in range(3):
  v=[];f=[]
  for i in range(49):
   t=i/48
   for j in range(7):
-   w=j/6; x=-.19+.47*t; y=-.125-.021*sin(pi*w)-.052*sin(pi*t)-.005*layer;z=1.60-.16*sin(pi*t*.8)-layer*.031*(.3+sin(pi*t))+w*.043+.009*sin(t*13+layer)*sin(pi*t)
+   w=j/6; x=-.19+.47*t; y=-.10-.021*sin(pi*w)-.022*sin(pi*t)-.005*layer;z=1.63+.10*t-.04*sin(pi*t)-layer*.026*(.4+sin(pi*t))+w*.035+.006*sin(t*13+layer)*sin(pi*t)
    v.append((x,y,z))
  for i in range(48):
   for j in range(6):a=i*7+j;f.append((a,a+1,a+8,a+7))
@@ -253,9 +347,21 @@ def medallion(name,c,r):
  for j in range(48):f.append((0,1+j,1+(j+1)%48))
  for k in range(4):
   for j in range(48):a=1+k*48+j;b=1+k*48+(j+1)%48;f.append((a,b,b+48,a+48))
- mesh(name,v,f,edge,0,.003)
+ mesh(name,v,[tuple(reversed(face)) for face in f],dark if name.startswith('Crown') else edge,0,.003)
  line('Rosette rim',[(c[0]+r*sin(2*pi*j/64),c[1],c[2]+r*cos(2*pi*j/64)) for j in range(65)],.0025)
-medallion('Mantle clasp',(-.17,-.17,1.54),.033);medallion('Belt buckle',(0,-.145,1.14),.036)
+medallion('Mantle clasp',(-.17,-.135,1.64),.033);medallion('Belt buckle',(0,-.145,1.14),.036)
+medallion('Crown | central heraldic seal',(0,-.113,1.9253),.025)
+# A short suspension chain follows a catenary between two actual belt attachment points.
+for link in range(25):
+ t=link/24;x=-.10+.26*t;z=1.14-.13*sin(pi*t)
+ ya=-.137*math.sqrt(1-(.10/.185)**2)-.004;yb=-.137*math.sqrt(1-(.16/.185)**2)-.004
+ y=ya*(1-t)+yb*t-.07*sin(pi*t)
+ tangent=Vector((.26,yb-ya-.07*pi*cos(pi*t),-.13*pi*cos(pi*t))).normalized()
+ side=Vector((0,-1,0));side=(side-tangent*side.dot(tangent)).normalized()
+ if link%2:side=tangent.cross(side)
+ center=Vector((x,y,z))
+ line('Belt suspension chain',[(center+tangent*(.010*cos(2*pi*j/20))+side*(.004*sin(2*pi*j/20))) for j in range(21)],.001,edge)
+
 # Sword, diamond-section blade with full tang, sculpted swept guard.
 sx=.63;sy=-.12
 loft('Greatsword | diamond section blade',[(sx,sy,.025,.001,.001),(sx,sy,.15,.025,.009),(sx,sy,.91,.038,.012),(sx,sy,1.00,.047,.014),(sx,sy,1.025,.031,.013)],edge,4)
@@ -268,11 +374,17 @@ v=[(sx+x,sy+y,z) for y in [-.019,.019] for x,z in outline];n=len(outline);f=[tup
 mesh('Greatsword | sculpted crossguard',v,f,steel,0,0)
 line('Guard chased border',v[:n]+[v[0]],.0025,edge)
 medallion('Guard garnet setting',(sx,sy-.022,1.031),.019)
+# Faceted garnet, set within the guard rosette.
+gv=[(sx,sy-.027,1.049),(sx+.010,sy-.027,1.031),(sx,sy-.027,1.013),(sx-.010,sy-.027,1.031),(sx,sy-.038,1.041),(sx+.004,sy-.038,1.031),(sx,sy-.038,1.021),(sx-.004,sy-.038,1.031),(sx,sy-.021,1.031)]
+gf=[(4,5,6,7)]+[(j,(j+1)%4,(j+1)%4+4,j+4) for j in range(4)]+[(8,(j+1)%4,j) for j in range(4)]
+gem=mesh('Greatsword | faceted garnet',gv,gf,ruby)
+for face in gem.data.polygons:face.use_smooth=False
+bm=bmesh.new();bm.from_mesh(gem.data);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(gem.data);bm.free()
 loft('Greatsword | pommel',[(sx,sy,1.27,.017,.017),(sx,sy,1.30,.029,.026),(sx,sy,1.33,.022,.021),(sx,sy,1.345,.005,.005)],steel,24,.06)
 # Authored branching foliage motifs, projected to each fitted plate.
 from mathutils.bvhtree import BVHTree
 for ob in list(parts):
- if ob.type!='MESH' or not any(word in ob.name for word in ['Cuirass','cuisse','Greave','pauldron','faceplate','Vambrace','Rerebrace']):continue
+ if ob.type!='MESH' or not any(word in ob.name for word in ['Cuirass','Plackart','cuisse','Greave','pauldron','faceplate','Vambrace','Rerebrace']):continue
  verts=[v.co.copy() for v in ob.data.vertices];faces=[list(p.vertices) for p in ob.data.polygons]
  tree=BVHTree.FromPolygons(verts,faces)
  xmin=min(v.x for v in verts);xmax=max(v.x for v in verts);zmin=min(v.z for v in verts);zmax=max(v.z for v in verts)
@@ -286,20 +398,37 @@ for ob in list(parts):
  cols=max(1,int(width/.07))
  for col in range(cols):
   cx=xmin+width*(col+.5)/cols; h=height*.82;zz=zmin+height*.08
-  phase=col*pi
+  phase=col*pi+.55*sin(col*2.7+height*5)
   chase([(cx+.008*sin(t*2*pi+phase),zz+t*h) for t in [i/48 for i in range(49)]],.001)
   for leaf in range(max(2,int(h/.037))):
    t0=(leaf+.5)/max(2,int(h/.037));cz=zz+t0*h
    for sign in [-1,1]:
     bx=cx+.008*sin(t0*2*pi+phase)
     # swept lanceolate leaves, alternated along the central stem
-    chase([(bx+sign*.024*sin(pi*t),cz+.035*t) for t in [i/20 for i in range(21)]])
-    chase([(bx+sign*.011*sin(pi*t),cz+.035*t) for t in [i/20 for i in range(21)]],.0005)
+    chase([(bx+sign*(.017+.007*sin(leaf*1.7+col)**2)*sin(pi*t),cz+.035*t) for t in [i/20 for i in range(21)]])
+    chase([(bx+sign*(.008+.004*sin(leaf*1.7+col)**2)*sin(pi*t),cz+.035*t) for t in [i/20 for i in range(21)]],.0005)
+# Individually seated, hand-peened rivets; one consolidated mesh.
+rv=[];rf=[]
+for plate in list(parts):
+ if plate.type!='MESH' or 'pauldron lame' not in plate.name:continue
+ for index in [8*33+4,8*33+28]:
+  vert=plate.data.vertices[index];normal=vert.normal.normalized();center=vert.co+normal*.0005
+  axis=Vector((0,0,1));side=normal.cross(axis)
+  if side.length<.01:side=normal.cross(Vector((1,0,0)))
+  side.normalize();up=normal.cross(side);base=len(rv);rv.append(center+normal*.0014)
+  for ring in [pi/4,pi/2]:
+   for j in range(8):
+    a=2*pi*j/8;rv.append(center+side*(.003*sin(ring)*cos(a))+up*(.003*sin(ring)*sin(a))+normal*(.0014*cos(ring)))
+  for j in range(8):
+   rf.append((base,base+1+j,base+1+(j+1)%8));rf.append((base+1+j,base+9+j,base+9+(j+1)%8,base+1+(j+1)%8))
+  rf.append(tuple(base+9+j for j in range(7,-1,-1)))
+mesh('Pauldron | seated steel rivets',rv,rf,edge)
+
 # Consolidate decorative curve objects into one mesh for manageable asset hierarchy.
 curves=[o for o in parts if o.type=='CURVE'];bpy.ops.object.select_all(action='DESELECT')
 for o in curves:o.select_set(True)
 bpy.context.view_layer.objects.active=curves[0];bpy.ops.object.convert(target='MESH');bpy.ops.object.join();bpy.context.object.name='Chased tracery, rolled edges and bindings'
-# UVs on all surfaces, export-compatible material factors; procedural microdetail remains in blend.
+# UVs on all surfaces and portable image-based PBR microdetail.
 assets=[o for o in bpy.context.scene.objects if o.type=='MESH']
 for o in ([] if FAST else assets):
  if o.get('preserve_uv'):continue
@@ -309,22 +438,14 @@ for o in ([] if FAST else assets):
 bpy.ops.object.select_all(action='DESELECT')
 for o in assets:o.select_set(True)
 if not FAST:
- saved_levels=[]
- for ob in assets:
-  for mod in ob.modifiers:
-   if mod.type=='SUBSURF':saved_levels.append((mod,mod.levels));mod.levels=0
- decor=bpy.data.objects.get('Chased tracery, rolled edges and bindings')
- reduction=decor.modifiers.new('Mobile relief density','DECIMATE');reduction.ratio=.65
- bpy.ops.export_scene.gltf(filepath=OUT+'/GothicBlackKnight.glb',export_format='GLB',use_selection=True,export_apply=True)
- import subprocess
- subprocess.run(['python',ROOT+'/scripts/fix_glb_color.py',OUT+'/GothicBlackKnight.glb'],check=True)
- bpy.ops.export_scene.fbx(filepath=OUT+'/GothicBlackKnight.fbx',use_selection=True,apply_unit_scale=True,bake_anim=False,add_leaf_bones=False)
- decor.modifiers.remove(reduction)
- for mod,level in saved_levels:mod.levels=level
+ import sys
+ sys.path.insert(0,ROOT+'/scripts')
+ from export_meshes import export_assets
+ export_assets(assets,OUT,ROOT)
 
 scene=bpy.context.scene
-scene.render.engine='CYCLES';scene.cycles.samples=12 if FAST else 48;scene.cycles.use_denoising=False
-scene.render.resolution_x=800;scene.render.resolution_y=1000;scene.render.resolution_percentage=65 if FAST else 100
+scene.render.engine='CYCLES';scene.cycles.samples=16 if FAST else 48;scene.cycles.use_denoising=os.environ.get('KNIGHT_DENOISE')=='1'
+scene.render.resolution_x=1024;scene.render.resolution_y=1280;scene.render.resolution_percentage=52 if FAST else 100
 scene.world.color=(.12,.12,.12)
 ground=mat('Studio floor',(.027,.032,.04),.05,.72)
 bpy.ops.mesh.primitive_plane_add(size=200);floor=bpy.context.object;floor.name='STUDIO floor';floor.location.z=.03;floor.data.materials.append(ground)
@@ -335,13 +456,16 @@ area('STUDIO rim',(2,2,3.5),700,(.86,.91,1),3)
 area('STUDIO front fill',(3,-2,2),300,(.76,.85,1),3)
 bpy.ops.object.camera_add();cam=bpy.context.object;scene.camera=cam;cam.data.type='ORTHO';cam.data.ortho_scale=2.55
 scene.view_settings.view_transform='AgX'
-views={'Front':(0,-5,1.45),'Back':(0,5,1.45),'Side':(-5,0,1.45),'Right':(5,0,1.45),'45':(3,-5,2.0)}
-if FAST:views={'45':(3,-5,2.0),'Back':(0,5,1.45)}
-report={'asset_meshes':len(assets),'vertices_base':sum(len(o.data.vertices) for o in assets),'polygons_base':sum(len(o.data.polygons) for o in assets),'reference':'Compared front, back and 45-degree renders to the user reference; still stylized and below target fidelity','limitations':['Static posed mesh; no rig or LODs','Procedural micro-normal detail is Blender-only until baked; GLB contains packed albedo and roughness images plus metalness factors','No production retopology or collision clearance certification']}
+views={'Front':(0,-5,1.45),'Back':(0,5,1.45),'Side':(-5,0,1.45),'Right':(5,0,1.45),'45':(-3.92,-4,1.45)}
+if FAST:views={name:views[name] for name in os.environ.get('KNIGHT_FAST_VIEWS','Front,45,Back').split(',')}
+report={'asset_meshes':len(assets),'vertices_base':sum(len(o.data.vertices) for o in assets),'polygons_base':sum(len(o.data.polygons) for o in assets),'reference':'docs/Reference.jpg; artistic review recorded separately in docs/ART_REVIEW.md','limitations':['Static posed mesh; no rig or LODs','PBR albedo, roughness and tangent normal maps are embedded; game-specific atlas baking is still pending','No production retopology or collision clearance certification']}
 with open(OUT+'/validation.json','w') as f:json.dump(report,f,indent=2)
-bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend')
+bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend',compress=True)
+render_report={'glb_sha256':hashlib.sha256(open(OUT+'/GothicBlackKnight.glb','rb').read()).hexdigest() if not FAST else None,'denoising':scene.cycles.use_denoising,'views':{}}
 for name,loc in views.items():
  cam.location=loc;cam.rotation_euler=(Vector((.08,0,1.08))-cam.location).to_track_quat('-Z','Y').to_euler();scene.render.filepath=OUT+'/Preview_'+name+'.png'
- bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend') if name=='45' else None
- bpy.ops.render.render(write_still=True)
+ bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend',compress=True) if name=='45' else None
+ start=time.time();bpy.ops.render.render(write_still=True)
+ render_report['views'][name]={'rendered':True,'seconds':round(time.time()-start,2),'sha256':hashlib.sha256(open(scene.render.filepath,'rb').read()).hexdigest()}
+ with open(OUT+'/render_check.json','w') as f:json.dump(render_report,f,indent=2)
 print('BUILD_COMPLETE',json.dumps(report))
