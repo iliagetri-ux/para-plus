@@ -1,0 +1,14 @@
+{
+  "ready": true,
+  "triangles": 171440,
+  "drawCalls": 73,
+  "bytes": 7406888,
+  "images": 11,
+  "errors": [],
+  "pageErrors": [],
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "browser": "Chromium headless SwiftShader; mobile viewport, not physical iPhone"
+}

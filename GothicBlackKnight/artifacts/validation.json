@@ -1,7 +1,7 @@
 {
-  "asset_meshes": 79,
-  "vertices_base": 130624,
-  "polygons_base": 122888,
+  "asset_meshes": 72,
+  "vertices_base": 102065,
+  "polygons_base": 95482,
   "reference": "Compared front, back and 45-degree renders to the user reference; still stylized and below target fidelity",
   "limitations": [
     "Static posed mesh; no rig or LODs",
