@@ -1,6 +1,8 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const assert = require('assert');
 (async () => {
   const root = path.resolve(__dirname, '..');
   const browser = await chromium.launch({
@@ -24,7 +26,25 @@ const path = require('path');
     await page.waitForFunction(() => window.viewerDiagnostics?.ready, null, { timeout: 60000 });
     await page.waitForTimeout(1200);
     await page.screenshot({ path: path.join(root, 'artifacts/WebGL_Mobile_Preview.png'), timeout: 60000 });
+    const canvas = page.locator('canvas');
+    const digest = async () => crypto.createHash('sha256').update(await canvas.screenshot()).digest('hex');
+    const frame = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const original = await digest();
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', {type, touchPoints:points.map(([id,x,y])=>({id,x,y}))});
+    await touch('touchStart', [[1,215,480]]);
+    for (let k=1;k<=6;k++) await touch('touchMove',[[1,215+k*12,480]]);
+    await touch('touchEnd', []);await frame();
+    assert.notStrictEqual(await digest(), original, 'Touch drag did not change the rendered view');
+    await page.locator('#reset').click();await frame();
+    assert.strictEqual(await digest(), original, 'Reset did not restore the view');
+    await touch('touchStart', [[1,160,480],[2,270,480]]);
+    for (let k=1;k<=5;k++) await touch('touchMove',[[1,160-k*10,480],[2,270+k*10,480]]);
+    await touch('touchEnd', []);await frame();
+    assert.notStrictEqual(await digest(), original, 'Pinch did not change the rendered view');
+    await page.locator('#reset').click();await frame();
     const result = await page.evaluate(() => window.viewerDiagnostics);
+    result.interactions = {touch_orbit:true, pinch_zoom:true, reset:true};
     result.pageErrors = errors;
     result.viewport = { width: 430, height: 932 };
     result.browser = 'Chromium headless SwiftShader; mobile viewport, not physical iPhone';

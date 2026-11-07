@@ -22,7 +22,7 @@ USDZ receives the same geometry and maps, with normal strength baked into the US
 
 1. Sculpt less regular chest/shoulder transitions and helmet panels. The silhouette is recognizable, but the plates still read as simplified fitted shells.
 2. Replace repetitive foliage with individually composed deep relief, localized dents and wear. The reference has denser, more varied ornament.
-3. Refine cloak attachments, organic fraying and weight at the ground. Existing tears are still too geometric and cloth too clean.
+3. Refine cloak attachments, organic fraying and weight at the ground. Existing tears are still too geometric and cloth too clean. The rear cloth weave reads too coarse; refine fabric UV density and reduce regular albedo variation.
 4. Refine the hand grasp and joint clearance in close-up; inspect concealed shoulder and hip attachments.
 5. Establish authored retopology, texture atlases, detail baking, rigging and LODs if the asset is to enter a game pipeline. Current exports are static posed meshes.
 
@@ -31,3 +31,7 @@ Numerical checks cover finite coordinates, degenerate triangles, UV presence, gl
 ## Continue autonomously
 
 Read README, inspect the five full-resolution previews and the independent GLB/USDZ/WebGL images against Reference.jpg, then modify the main source in place. Preserve the last working GitHub commit. Fast proofs go into ignored `proof/`; full rebuild uses `scripts/build_all.py`. After interruption, `--resume-renders` verifies GLB/PNG hashes before skipping any view. Blender Python errors must return a nonzero exit status. Commit source after a meaningful stage, upload coherent artifacts after validation, and verify the remote tree against local blob hashes. Do not claim artistic completion based on successful file export.
+
+## Latest completed verification
+
+All five 1024×1280 source views were rendered and visually inspected. The final GLB passed Khronos validation with zero errors and zero warnings (one informational unused-tangent note on the non-normal-mapped garnet). Clean-scene GLB and USDZ imports produced no nonfinite coordinates, degenerate triangles or missing UVs. Independent FBX geometry import passed. Browser touch orbit, pinch zoom and reset changed/restored the rendered view as expected. These checks support file usability, not achievement of the reference quality target.

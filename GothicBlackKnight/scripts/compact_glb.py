@@ -22,6 +22,7 @@ for index in indices:
   payload.extend(struct.pack('<'+'h'*count,*q));payload.extend(b'\0'*((-len(payload))%4))
  a['componentType']=5122;a['normalized']=True;a['byteOffset']=0
  a.pop('min',None);a.pop('max',None);v['byteStride']=8;replacements[a['bufferView']]=bytes(payload)
+assert worst<=1.6e-5, 'Vector quantization exceeded the error bound'
 new=bytearray()
 for i,v in enumerate(g['bufferViews']):
  payload=replacements.get(i,binary[v.get('byteOffset',0):v.get('byteOffset',0)+v['byteLength']]);new.extend(b'\0'*((-len(new))%4));v['byteOffset']=len(new);v['byteLength']=len(payload);new.extend(payload)

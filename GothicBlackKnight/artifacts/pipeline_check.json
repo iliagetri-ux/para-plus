@@ -1,0 +1,55 @@
+{
+  "blender": "/workspace/tools/blender-4.3.2-linux-x64/blender",
+  "denoising": true,
+  "resumed": false,
+  "steps": [
+    {
+      "name": "model and five renders",
+      "exit_code": 0,
+      "seconds": 850.14
+    },
+    {
+      "name": "Khronos glTF validation",
+      "exit_code": 0,
+      "seconds": 0.65
+    },
+    {
+      "name": "independent GLB import",
+      "exit_code": 0,
+      "seconds": 10.06
+    },
+    {
+      "name": "USDZ export and validation",
+      "exit_code": 0,
+      "seconds": 2.45
+    },
+    {
+      "name": "independent USDZ import",
+      "exit_code": 0,
+      "seconds": 7.07
+    },
+    {
+      "name": "WebGL mobile viewport",
+      "exit_code": 0,
+      "seconds": 18.11
+    },
+    {
+      "name": "archive integrity and hashes",
+      "exit_code": 0,
+      "seconds": 1.55
+    }
+  ],
+  "separate_checks": [
+    {
+      "name": "Export refinement from saved native scene",
+      "exit_code": 0,
+      "script": "scripts/export_meshes.py",
+      "note": "Executed during source rendering; final GLB subsequently passed all pipeline checks."
+    },
+    {
+      "name": "Independent FBX geometry import",
+      "exit_code": 0,
+      "report": "fbx_import_check.json"
+    }
+  ]
+}

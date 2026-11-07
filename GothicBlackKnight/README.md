@@ -7,11 +7,11 @@ An editable, static Gothic knight modeled in Blender 4.3.2 against [the supplied
 - `artifacts/GothicBlackKnight.blend`: editable detailed surfaces, packed materials and lit studio.
 - `artifacts/GothicBlackKnight.glb`: self-contained mobile mesh, embedded PBR maps and explicit tangent frames; exact size and triangle count are recorded in `webgl_check.json`.
 - `artifacts/GothicBlackKnight.usdz`: Quick Look format; reopened and validated using OpenUSD and independently imported/rendered in Blender. Physical iPhone testing has not been performed.
-- `artifacts/GothicBlackKnight.fbx`: static interchange geometry; FBX material fidelity is not certified.
+- `artifacts/GothicBlackKnight.fbx`: static interchange geometry, independently reimported; FBX material fidelity is not certified.
 - `Preview_Front.png`, `Preview_Back.png`, `Preview_Side.png`, `Preview_Right.png`, `Preview_45.png`: real Cycles renders of the detailed source.
 - `GLB_Import_Preview.png` and `USDZ_Import_Preview.png`: separate clean-scene Blender renders of the exported files.
 - `WebGL_Mobile_Preview.png`: actual Chromium WebGL rendering at a 430×932 mobile viewport.
-- `manifest.json`, `render_check.json`, `pipeline_check.json`, `glb_import_check.json`, `gltf_validator.json`, `webgl_check.json`, `usdz_check.json`, `usdz_import_check.json`: hashes and machine-readable validation results.
+- `manifest.json`, `render_check.json`, `pipeline_check.json`, `glb_import_check.json`, `gltf_validator.json`, `webgl_check.json`, `usdz_check.json`, `usdz_import_check.json`, `fbx_import_check.json`: hashes and machine-readable validation results.
 
 Raw model files and ZIP copies are provided. The native BLEND is more detailed than the mobile exports; ornaments and fabric subdivision are reduced during export without modifying the editable source.
 
@@ -32,7 +32,7 @@ python GothicBlackKnight/scripts/build_all.py
 
 `setup_cloud.py` installs official Linux x64 Blender 4.3.2 after checking its pinned SHA-256, plus OpenUSD, Pillow and Khronos glTF Validator. The official Blender includes OpenImageDenoise and USD import. Set `BLENDER_BIN` to override it. Playwright and Chromium must be available for the browser check (`CHROMIUM_BIN` overrides the executable).
 
-The pipeline generates 1024×1280 Cycles views with 48 samples and denoising, checks glTF, independently reimports GLB and USDZ, tests WebGL, and packages the artifacts. Blender scripts use `--python-exit-code 1` so errors fail the pipeline. After interruption, `build_all.py --resume-renders` reuses only views whose PNG and source-GLB hashes match; it then reruns export validation and packaging. `render_check.json` records per-view hashes.
+The pipeline generates 1024×1280 Cycles views with 48 samples and denoising, checks glTF, independently reimports GLB and USDZ, tests WebGL, and packages the artifacts. Blender scripts use `--python-exit-code 1` so errors fail the pipeline. After interruption, `build_all.py --resume-renders` reuses only views whose PNG, native BLEND and source-GLB hashes match; it then reruns export validation and packaging. `render_check.json` records per-view hashes.
 
 Fast art proofs use `KNIGHT_FAST=1` and optional `KNIGHT_FAST_VIEWS=Front,45,Back`; they write to `proof/`, preserving deliverables. These commands are for the cloud agent, not work required from the iPhone user.
 

@@ -467,5 +467,6 @@ for name,loc in views.items():
  bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend',compress=True) if name=='45' else None
  start=time.time();bpy.ops.render.render(write_still=True)
  render_report['views'][name]={'rendered':True,'seconds':round(time.time()-start,2),'sha256':hashlib.sha256(open(scene.render.filepath,'rb').read()).hexdigest()}
+ render_report['blend_sha256']=hashlib.sha256(open(OUT+'/GothicBlackKnight.blend','rb').read()).hexdigest()
  with open(OUT+'/render_check.json','w') as f:json.dump(render_report,f,indent=2)
 print('BUILD_COMPLETE',json.dumps(report))
