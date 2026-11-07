@@ -1,0 +1,7 @@
+.deps/
+proof/
+checkpoints/
+usd_work/
+*.log
+*.blend1
+__pycache__/

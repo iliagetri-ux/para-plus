@@ -1,45 +1,44 @@
 # Gothic Black Knight
 
-Work in progress, modeled and rendered in Blender 4.3.2 in a cloud environment. Based on the knight reference supplied in the Codex conversation. This is a static posed character study, **not a finished production game asset**.
+An editable, static Gothic knight modeled in Blender 4.3.2 against [the supplied reference](docs/Reference.jpg). Current artistic fidelity remains below the reference; this is not a finished production game asset.
 
-## Files
+## Deliverables
 
-- `artifacts/GothicBlackKnight.blend`: editable surfaces, materials, studio and camera.
-- `artifacts/GothicBlackKnight.glb`: self-contained mesh and PBR image materials.
-- `artifacts/GothicBlackKnight.fbx`: static mesh interchange; shader fidelity is not guaranteed.
-- `artifacts/Preview_Front.png`, `Preview_Back.png`, `Preview_Side.png` (left), `Preview_Right.png`, `Preview_45.png`: actual Cycles renders.
-- `artifacts/GLB_Import_Preview.png`: independent render after importing exported GLB into a clean Blender scene.
-- `artifacts/glb_import_check.json`: import, finite vertex, degenerate face and UV checks.
-- `scripts/build.py`: deterministic complete reconstruction pipeline.
-- `scripts/validate.py`: independent GLB import and render check.
+- `artifacts/GothicBlackKnight.blend`: editable detailed surfaces, packed materials and lit studio.
+- `artifacts/GothicBlackKnight.glb`: self-contained mobile mesh, 7.4 MB, 171,440 triangles, embedded PBR maps.
+- `artifacts/GothicBlackKnight.usdz`: 6.0 MB Quick Look format; reopened and validated using OpenUSD. Physical iPhone testing has not been performed.
+- `artifacts/GothicBlackKnight.fbx`: static interchange geometry; FBX material fidelity is not certified.
+- `Preview_Front.png`, `Preview_Back.png`, `Preview_Side.png`, `Preview_Right.png`, `Preview_45.png`: real Cycles renders of the detailed source.
+- `GLB_Import_Preview.png`: a separate clean-scene Blender render of the exported GLB.
+- `WebGL_Mobile_Preview.png`: actual Chromium WebGL rendering at a 430×932 mobile viewport.
+- `manifest.json`, `glb_import_check.json`, `webgl_check.json`, `usdz_check.json`: hashes and machine-readable validation results.
 
-## Construction
+Raw model files and ZIP copies are provided. The native BLEND is more detailed than the mobile exports; ornaments and fabric subdivision are reduced during export without modifying the editable source.
 
-Armor is built from connected ring surfaces, shaped shoulder patches and separate fitted articulated plates. Cape and split tabard are continuous draped quad surfaces with thickness. Individual fingers, full enclosed helmet, crown, blade, guard and wrapped grip are modeled. Foliate chasing is ray-projected onto armor surfaces and consolidated into a decorative mesh. This is not a cloud of stock primitives. Deliberate overlaps between plates remain; the character is not one watertight printable solid.
+## Geometry and materials
 
-PBR metallic/roughness materials include packed albedo and roughness images. The Blender source additionally uses procedural fine bump, which is not baked into the GLB. No external texture downloads are needed for GLB. Meshes have automatically packed UVs; these are not final artist-authored UV layouts.
+Connected shaped surfaces define armor, pointed visor, continuous crown, overlapping shoulder and hip plates, individual fingers, greaves, boots, sword and draped fabric. Foliage follows the actual armor using ray projection. The stance widens naturally toward the feet. Tailored tabards have dedicated UVs and faded heraldic pigment.
 
-## Reproduce in an agent/cloud session
+Packed color and roughness maps survive export. `fix_glb_color.py` converts the generator's linear Non-Color albedo pixels to sRGB, as required by glTF; data maps remain linear. The correction is idempotent and was checked in the independent WebGL renderer. Additional procedural Blender micro-bump is not baked into the mobile files.
+
+## Rebuild in an agent/cloud session
 
 ```sh
+python -m pip install --target GothicBlackKnight/.deps -r GothicBlackKnight/requirements-usd.txt
 blender -b -t 6 --python GothicBlackKnight/scripts/build.py
 blender -b -t 2 --python GothicBlackKnight/scripts/validate.py
+python GothicBlackKnight/scripts/export_usdz.py
+python GothicBlackKnight/scripts/package.py
 ```
 
-These commands are instructions for the next agent, not work required from the iPhone user. Denoising is disabled because this environment's Blender build lacks OpenImageDenoise. Rendering is CPU Cycles. Rebuild overwrites the named outputs; preserve working artifacts before major changes.
+Pillow must also be available to the `python` command used by the Blender build's GLB postprocessor. Fast art proofs use `KNIGHT_FAST=1` and write to `proof/`, preserving the current deliverables. CPU Cycles is used; this Blender build lacks OpenImageDenoise. These commands are for the agent, not work required from the iPhone user.
 
-## Remaining art and engineering work
+## Independent viewer test
 
-The reference has much more organic plate shaping, dense worn relief, richer cloth distress and a more natural asymmetric pose. The current sculpt remains more regular and stylized. Priorities:
+`viewer/index.html` is a dependency-free local WebGL 2 GLB viewer with touch orbit/pinch controls. Serve this project directory locally on port 8766, then run `node viewer/test.cjs` with Playwright installed. It is a local verification tool, not a published website. The test uses Chromium/SwiftShader and a mobile viewport; it does not emulate iOS Safari or certify physical iPhone performance.
 
-1. Further sculpt the helmet/brow and shoulder transitions against the reference; improve palm/thumb anatomy and grasp.
-2. Replace repetitive spirals with authored gothic foliage and localized wear. Refine chest/hip plate silhouettes and back attachments.
-3. Sculpt irregular cloth folds and tears; add the faded heraldry from the reference.
-4. Retopologize and bake relief/normal/AO maps to a lower resolution game mesh. Add deliberate UV seams and texture atlases.
-5. Inspect armor collision clearance in animation; add skeleton, skinning, LODs and engine integration tests.
+USDZ is generated directly from the corrected GLB through OpenUSD 26.11. The source Blender binary lacks USD support. The package was checked for uncompressed entries, 64-byte alignment, resolved texture assets and zero issues from all registered OpenUSD validators. This is not an Apple-device test.
 
-A valid GLB import and clean numeric checks do not certify absence of all intersections or production readiness. No claim is made of exact reference matching, completed rigging, or a mobile-browser compatibility test.
+## Remaining work
 
-## GitHub delivery
-
-The GitHub connector limits each request to 16 MiB including base64 overhead. Model binaries are therefore stored in individual `.blend.zip`, `.glb.zip`, and `.fbx.zip` archives in the repository; each archive contains its original named file. PNG previews and source files are stored directly. ZIP integrity and per-file SHA-256 hashes are recorded in `artifacts/manifest.json`.
+The reference has substantially more organic and ornate surfaces. Prioritize the chest and shoulder transitions, full facial relief and crown treatment, authored localized wear, irregular fabric damage, anatomical hand grasp and rear attachments. The current foliage remains repetitive and surfaces too regular. A production game pipeline also needs authored retopology, texture atlases and normal/AO baking, rigging, LODs and animation clearance testing. See `docs/ART_REVIEW.md` for the continuation checklist. Preserve this working artifact set before major sculptural edits.

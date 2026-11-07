@@ -19,3 +19,13 @@ The reference remains substantially more sophisticated than this asset. Current 
 Next session: read README and this file, retrieve the model ZIPs, inspect the blend and all final PNGs, then prioritize sculpted shoulder/chest/helmet transitions and authored cloth damage. Preserve these artifacts while making changes. Re-run `scripts/validate.py` and `scripts/package.py` after rebuilding. Confirm remote branch contents and blob hashes before claiming uploads succeeded.
 
 The inner shoulder articulation still needs a fitted padded support and more convincing collar attachment; the three-quarter view remains the best diagnostic view for this area.
+
+## Subsequent form and mobile-export pass
+
+The supplied reference is now preserved as `Reference.jpg`. Replaced the round helmet/brow with a ridged angular faceplate and a connected ogival crown. Added fitted shoulder padding, curved breast shaping, pointed tasset hems, progressive leg stance widening, larger asymmetric cloth folds and faded heraldry. Replaced the spiral grid with surface-projected branching foliage. Inspect all five updated source renders and the new independent WebGL image before further edits.
+
+Mobile GLB uses reduced fabric tessellation and relief density. Its linear albedo images initially rendered too dark in WebGL; `fix_glb_color.py` now performs the required sRGB conversion and marks the GLB so it cannot be applied twice. Do not remove this postprocessing step while the generator uses Non-Color albedo buffers. Blender renders and the exported GLB use different tessellation levels and studio lighting; compare material behavior accordingly.
+
+OpenUSD is installed project-locally, enabling USDZ without Blender USD support. `export_usdz.py` rejects unexpected node transforms instead of silently dropping them. If the model is rigged or hierarchy transforms are introduced, extend that exporter before running it. The current USDZ passed all registered OpenUSD validators and package/texture checks. No physical iPhone or AR session was tested.
+
+Next art priorities: less tubular vambraces and shin plates, individually composed relief on the breastplate and mask, more convincing shoulder/neck attachments, finer organic fabric erosion, varied armor thickness and hand gripping anatomy. The source still reads more stylized and regular than the reference. Do not equate successful export or mobile rendering with reaching the user's artistic target.
