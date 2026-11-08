@@ -14,9 +14,10 @@ def mat(name,col,metal,rough,noise=0):
  rng=random.Random(name)
  for yy in range(size):
   for xx in range(size):
-   mottling=.85+.12*sin(xx*.17+sin(yy*.12))+.07*sin(yy*.29)+rng.uniform(-.08,.08)
+   mottling=(.96+.018*sin(xx*.033+sin(yy*.027))+rng.uniform(-.018,.018)) if 'woven' in name else (.93+.045*sin(xx*.037+sin(yy*.043))+.025*sin(yy*.07)+rng.uniform(-.035,.035))
    pixels.extend([min(1,c*mottling) for c in col]+[1])
-   rr=max(.03,min(1,rough+.06*sin(xx*.17+yy*.11)+rng.uniform(-.045,.045)))
+   variation=.012 if 'woven' in name else .04
+   rr=max(.03,min(1,rough+variation*sin(xx*.07+yy*.05)+rng.uniform(-variation,variation)))
    roughpixels.extend((rr,rr,rr,1))
  for label,data,socket in [('Albedo',pixels,'Base Color'),('Roughness',roughpixels,'Roughness')]:
   im=bpy.data.images.new(name+' '+label,width=size,height=size);im.colorspace_settings.name='Non-Color';im.pixels.foreach_set(data);im.pack()
@@ -26,7 +27,8 @@ def mat(name,col,metal,rough,noise=0):
   dim=256;rg=np.random.default_rng(sum((i+1)*ord(c) for i,c in enumerate(name)))
   yy,xx=np.mgrid[0:dim,0:dim]/dim
   if 'woven' in name:
-   height=.16*(np.sin(2*pi*xx*64)+np.sin(2*pi*yy*64))+rg.standard_normal((dim,dim))*.025
+   height=rg.standard_normal((dim,dim))*.08
+   height+=np.roll(height,1,axis=0)*.4
   else:
    height=rg.standard_normal((dim,dim))*.10+.025*np.sin(2*pi*(xx*47+yy*19))
   nx=(np.roll(height,1,axis=1)-np.roll(height,-1,axis=1))*.65
@@ -35,7 +37,7 @@ def mat(name,col,metal,rough,noise=0):
   pixels=np.stack((nx/length*.5+.5,ny/length*.5+.5,nz/length*.5+.5,np.ones_like(nx)),axis=-1).astype(np.float32)
   normal_image=bpy.data.images.new(name+' Tangent normal',width=dim,height=dim);normal_image.colorspace_settings.name='Non-Color';normal_image.pixels.foreach_set(pixels.ravel());normal_image.pack()
   tx=n.new('ShaderNodeTexImage');tx.image=normal_image
-  normal=n.new('ShaderNodeNormalMap');normal.inputs['Strength'].default_value=.55 if metal>.5 else .28
+  normal=n.new('ShaderNodeNormalMap');normal.inputs['Strength'].default_value=.55 if metal>.5 else .18
   m.node_tree.links.new(tx.outputs['Color'],normal.inputs['Color']);m.node_tree.links.new(normal.outputs['Normal'],p.inputs['Normal'])
  return m
 steel=mat('01 | Blackened forged steel',(.026,.030,.036),.9,.43,180)
@@ -174,7 +176,7 @@ for k in range(5):
  t=k/4
  for j in range(n):
   a=2*pi*j/n;peak=max(0,cos(6*a))**12
-  z=1.865+t*(.045+.14*peak);rx=.107+.014*t;ry=.103+.012*t
+  z=1.865+t*(.045+.14*(.75+.25*cos(2*a)**2)*peak);rx=.107+.014*t;ry=.103+.012*t
   v.append((rx*sin(a),.006-ry*cos(a),z))
 for k in range(4):
  for j in range(n):a=k*n+j;b=k*n+(j+1)%n;f.append((a,b,b+n,a+n))
@@ -196,8 +198,8 @@ for s in [-1,1]:
    t=k/(nr-1)
    for j in range(nc):
     a=-pi*.60+pi*1.20*j/(nc-1);w=.12+.035*t
-    phi=.035+t*1.57; radius=.15-layer*.012
-    x=s*(.255+layer*.018+radius*sin(phi)*cos(a));y=.14*sin(phi)*sin(a);z=1.59-layer*.057+.132*cos(phi)-.028*(.5+.5*cos(3*a))*t**5+.025*max(0,cos(a))**12*(1-t)**4
+    phi=.035+t*1.57; radius=(.172 if s<0 else .145)-layer*.012
+    x=s*(.255+layer*.018+radius*sin(phi)*cos(a));y=.14*sin(phi)*sin(a);z=1.59-layer*.057+.132*cos(phi)-.028*(.5+.5*cos(3*a))*t**5+(.045 if s<0 else .025)*max(0,cos(a))**10*(1-t)**4
     v.append((x,y,z))
   for k in range(nr-1):
    for j in range(nc-1):a=k*nc+j;f.append((a,a+1,a+nc+1,a+nc))
@@ -236,7 +238,7 @@ for s in [-1,1]:
  leg_start=len(parts)
  x=s*.115
  limb('Arming leg',(x,0,.98),(x,.012,.15),[(0,.087,.085),(.4,.07,.073),(.5,.064,.068),(.75,.055,.06),(1,.04,.045)],dark)
- ob=loft('Anatomical cuisse',[(x,0,.64,.074,.078),(x,0,.73,.08,.088),(x,0,.87,.089,.094),(x,0,.98,.087,.09)],steel,48,.045);ornament(ob,[0,3])
+ ob=loft('Anatomical cuisse',[(x,0,.64,.074,.078),(x,0,.73,.08,.088),(x,0,.87,.089,.094),(x,0,.98,.087,.09)],steel,48,.018);ornament(ob,[0,3])
  for k in range(3):
   ob=loft('Hip tasset overlapping plate',[(x,-.015,.88+k*.061,.091,.092),(x,-.008,.95+k*.061,.092,.091)],steel,48,.015)
   for j in range(48):ob.data.vertices[j].co.z-=.035*max(0,cos(2*pi*j/48))**6
@@ -249,7 +251,10 @@ for s in [-1,1]:
   if vertex.index>=4*48:vertex.co.z+=.028*front**8
   vertex.co.x+=s*.025*max(0,s*sin(a))**10*sin(pi*(vertex.index//48)/4)
  ornament(ob,[0,4])
- ob=loft('Greave | calf and tibial crest',[(x,0,.13,.044,.052),(x,0,.20,.045,.056),(x,.012,.35,.066,.072),(x,.012,.46,.061,.067),(x,0,.54,.051,.056)],steel,48,.075);ornament(ob,[0,4])
+ ob=loft('Greave | calf and tibial crest',[(x,0,.13,.044,.052),(x,0,.20,.045,.056),(x,.012,.35,.066,.072),(x,.012,.46,.061,.067),(x,0,.54,.051,.056)],steel,48,.018)
+ for vertex in ob.data.vertices:
+  a=2*pi*(vertex.index%48)/48;vertex.co.y-=.013*max(0,cos(a))**10
+ ornament(ob,[0,4])
  # sabaton horizontal contour rings, layered toes in front
  ob=loft('Sabatons | shaped plated boot',[(x,-.06,.035,.072,.15),(x,-.065,.055,.075,.155),(x,-.06,.085,.066,.14),(x,-.015,.13,.048,.075),(x,0,.17,.045,.054)],steel,48,.012);ornament(ob,[0,2])
  for k in range(4):
@@ -287,6 +292,9 @@ for k in range(nv-1):
   if tear:continue
   a=k*nu+j;f.append((a,a+1,a+nu+1,a+nu))
 cape_ob=mesh('Cape | tailored drape and sparse torn openings',v,f,cloth,1,.0014)
+uv=cape_ob.data.uv_layers.new(name='Continuous cloth grain');cape_ob['preserve_uv']=True
+for loop in cape_ob.data.loops:
+ index=loop.vertex_index;uv.data[loop.index].uv=(8*(index%nu)/(nu-1),8*(index//nu)/(nv-1))
 import bmesh
 bm=bmesh.new();bm.from_mesh(cape_ob.data)
 for vertex in list(bm.verts):
@@ -381,32 +389,11 @@ gem=mesh('Greatsword | faceted garnet',gv,gf,ruby)
 for face in gem.data.polygons:face.use_smooth=False
 bm=bmesh.new();bm.from_mesh(gem.data);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(gem.data);bm.free()
 loft('Greatsword | pommel',[(sx,sy,1.27,.017,.017),(sx,sy,1.30,.029,.026),(sx,sy,1.33,.022,.021),(sx,sy,1.345,.005,.005)],steel,24,.06)
-# Authored branching foliage motifs, projected to each fitted plate.
-from mathutils.bvhtree import BVHTree
-for ob in list(parts):
- if ob.type!='MESH' or not any(word in ob.name for word in ['Cuirass','Plackart','cuisse','Greave','pauldron','faceplate','Vambrace','Rerebrace']):continue
- verts=[v.co.copy() for v in ob.data.vertices];faces=[list(p.vertices) for p in ob.data.polygons]
- tree=BVHTree.FromPolygons(verts,faces)
- xmin=min(v.x for v in verts);xmax=max(v.x for v in verts);zmin=min(v.z for v in verts);zmax=max(v.z for v in verts)
- width=xmax-xmin;height=zmax-zmin
- def chase(path,r=.00075):
-  pts=[]
-  for x,z in path:
-   hit,normal,idx,dist=tree.ray_cast(Vector((x,-1,z)),Vector((0,1,0)))
-   if hit is not None:pts.append(hit+normal*.00055)
-  if len(pts)>3:line('Projected branching foliate relief',pts,r,edge)
- cols=max(1,int(width/.07))
- for col in range(cols):
-  cx=xmin+width*(col+.5)/cols; h=height*.82;zz=zmin+height*.08
-  phase=col*pi+.55*sin(col*2.7+height*5)
-  chase([(cx+.008*sin(t*2*pi+phase),zz+t*h) for t in [i/48 for i in range(49)]],.001)
-  for leaf in range(max(2,int(h/.037))):
-   t0=(leaf+.5)/max(2,int(h/.037));cz=zz+t0*h
-   for sign in [-1,1]:
-    bx=cx+.008*sin(t0*2*pi+phase)
-    # swept lanceolate leaves, alternated along the central stem
-    chase([(bx+sign*(.017+.007*sin(leaf*1.7+col)**2)*sin(pi*t),cz+.035*t) for t in [i/20 for i in range(21)]])
-    chase([(bx+sign*(.008+.004*sin(leaf*1.7+col)**2)*sin(pi*t),cz+.035*t) for t in [i/20 for i in range(21)]],.0005)
+# Composed, broad acanthus relief replaces the repeated wire-leaf pattern.
+import sys
+sys.path.insert(0,ROOT+'/scripts')
+from relief import decorate
+decorate(parts,mesh,line,steel,edge)
 # Individually seated, hand-peened rivets; one consolidated mesh.
 rv=[];rf=[]
 for plate in list(parts):
@@ -444,8 +431,8 @@ if not FAST:
  export_assets(assets,OUT,ROOT)
 
 scene=bpy.context.scene
-scene.render.engine='CYCLES';scene.cycles.samples=16 if FAST else 48;scene.cycles.use_denoising=os.environ.get('KNIGHT_DENOISE')=='1'
-scene.render.resolution_x=1024;scene.render.resolution_y=1280;scene.render.resolution_percentage=52 if FAST else 100
+scene.render.engine='CYCLES';scene.cycles.samples=16 if FAST else int(os.environ.get('KNIGHT_SAMPLES','48'));scene.cycles.use_denoising=os.environ.get('KNIGHT_DENOISE')=='1'
+scene.render.resolution_x=1024;scene.render.resolution_y=1280;scene.render.resolution_percentage=52 if FAST else int(os.environ.get('KNIGHT_PREVIEW_SCALE','100'))
 scene.world.color=(.12,.12,.12)
 ground=mat('Studio floor',(.027,.032,.04),.05,.72)
 bpy.ops.mesh.primitive_plane_add(size=200);floor=bpy.context.object;floor.name='STUDIO floor';floor.location.z=.03;floor.data.materials.append(ground)
@@ -461,7 +448,7 @@ if FAST:views={name:views[name] for name in os.environ.get('KNIGHT_FAST_VIEWS','
 report={'asset_meshes':len(assets),'vertices_base':sum(len(o.data.vertices) for o in assets),'polygons_base':sum(len(o.data.polygons) for o in assets),'reference':'docs/Reference.jpg; artistic review recorded separately in docs/ART_REVIEW.md','limitations':['Static posed mesh; no rig or LODs','PBR albedo, roughness and tangent normal maps are embedded; game-specific atlas baking is still pending','No production retopology or collision clearance certification']}
 with open(OUT+'/validation.json','w') as f:json.dump(report,f,indent=2)
 bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend',compress=True)
-render_report={'glb_sha256':hashlib.sha256(open(OUT+'/GothicBlackKnight.glb','rb').read()).hexdigest() if not FAST else None,'denoising':scene.cycles.use_denoising,'views':{}}
+render_report={'glb_sha256':hashlib.sha256(open(OUT+'/GothicBlackKnight.glb','rb').read()).hexdigest() if not FAST else None,'denoising':scene.cycles.use_denoising,'samples':scene.cycles.samples,'resolution':[round(scene.render.resolution_x*scene.render.resolution_percentage/100),round(scene.render.resolution_y*scene.render.resolution_percentage/100)],'views':{}}
 for name,loc in views.items():
  cam.location=loc;cam.rotation_euler=(Vector((.08,0,1.08))-cam.location).to_track_quat('-Z','Y').to_euler();scene.render.filepath=OUT+'/Preview_'+name+'.png'
  bpy.ops.wm.save_as_mainfile(filepath=OUT+'/GothicBlackKnight.blend',compress=True) if name=='45' else None

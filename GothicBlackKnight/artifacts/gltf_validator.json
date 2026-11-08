@@ -2,7 +2,7 @@
   "uri": "GothicBlackKnight.glb",
   "mimeType": "model/gltf-binary",
   "validatorVersion": "2.0.0-dev.3.10",
-  "validatedAt": "2026-11-07T20:24:31.603Z",
+  "validatedAt": "2026-11-08T10:27:12.803Z",
   "issues": {
     "numErrors": 0,
     "numWarnings": 0,
@@ -32,7 +32,7 @@
         "pointer": "/buffers/0",
         "mimeType": "application/gltf-buffer",
         "storage": "glb",
-        "byteLength": 10223088
+        "byteLength": 6986024
       },
       {
         "pointer": "/images/0",
@@ -275,9 +275,9 @@
     "hasSkins": false,
     "hasTextures": true,
     "hasDefaultScene": true,
-    "drawCallCount": 99,
-    "totalVertexCount": 192045,
-    "totalTriangleCount": 199186,
+    "drawCallCount": 119,
+    "totalVertexCount": 131695,
+    "totalTriangleCount": 159708,
     "maxUVs": 1,
     "maxInfluences": 0,
     "maxAttributes": 4

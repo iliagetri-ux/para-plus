@@ -1,7 +1,7 @@
 {
-  "asset_meshes": 78,
-  "vertices_base": 120461,
-  "polygons_base": 113269,
+  "asset_meshes": 98,
+  "vertices_base": 82712,
+  "polygons_base": 73564,
   "reference": "docs/Reference.jpg; artistic review recorded separately in docs/ART_REVIEW.md",
   "limitations": [
     "Static posed mesh; no rig or LODs",

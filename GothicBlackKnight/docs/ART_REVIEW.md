@@ -22,7 +22,7 @@ USDZ receives the same geometry and maps, with normal strength baked into the US
 
 1. Sculpt less regular chest/shoulder transitions and helmet panels. The silhouette is recognizable, but the plates still read as simplified fitted shells.
 2. Replace repetitive foliage with individually composed deep relief, localized dents and wear. The reference has denser, more varied ornament.
-3. Refine cloak attachments, organic fraying and weight at the ground. Existing tears are still too geometric and cloth too clean. The rear cloth weave reads too coarse; refine fabric UV density and reduce regular albedo variation.
+3. Refine cloak attachments, organic fraying and weight at the ground. Existing tears are still too geometric and cloth too clean. The oversized rear weave has been reduced; authored localized textile wear is still needed.
 4. Refine the hand grasp and joint clearance in close-up; inspect concealed shoulder and hip attachments.
 5. Establish authored retopology, texture atlases, detail baking, rigging and LODs if the asset is to enter a game pipeline. Current exports are static posed meshes.
 
@@ -34,4 +34,12 @@ Read README, inspect the five full-resolution previews and the independent GLB/U
 
 ## Latest completed verification
 
-All five 1024×1280 source views were rendered and visually inspected. The final GLB passed Khronos validation with zero errors and zero warnings (one informational unused-tangent note on the non-normal-mapped garnet). Clean-scene GLB and USDZ imports produced no nonfinite coordinates, degenerate triangles or missing UVs. Independent FBX geometry import passed. Browser touch orbit, pinch zoom and reset changed/restored the rendered view as expected. These checks support file usability, not achievement of the reference quality target.
+The previous checkpoint had five 1024×1280 views. The current relief/fabric pass uses five 768×960 views at 24 samples with denoising; inspect these against the same reference. The final GLB passed Khronos validation with zero errors and zero warnings (one informational unused-tangent note on the non-normal-mapped garnet). Clean-scene GLB and USDZ imports produced no nonfinite coordinates, degenerate triangles or missing UVs. Independent FBX geometry import passed. Browser touch orbit, pinch zoom and reset changed/restored the rendered view as expected. These checks support file usability, not achievement of the reference quality target.
+
+## Relief and fabric pass
+
+`relief.py` replaces thin repeated wire leaves with broad lobed repousse patches and fine center veins, composed per fitted plate. The stronger left pauldron, varied crown peaks and single tibial crests improve the silhouette. Fabric maps now use restrained stochastic grain; the cape uses continuous UVs at a finer scale instead of visible oversized weaving. The guided cloth study script was prepared but was not executed or adopted. Do not describe the current cape as a physical cloth simulation.
+
+The artistic target is still not reached. The result remains a simplified static procedural character, with overly regular surfaces, rigid pose and geometric cloth damage. Further numerical validation cannot resolve that artistic gap. Preserve the delivered files and report this limit plainly rather than treating repeated exports as completion.
+
+The delivered relief pass passed all eight pipeline stages, including independent imports and touch interactions. All five new views were visually inspected. `artifacts/art_review.json` explicitly records that the reference quality target remains unmet.

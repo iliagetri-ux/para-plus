@@ -6,50 +6,42 @@
     {
       "name": "model and five renders",
       "exit_code": 0,
-      "seconds": 850.14
+      "seconds": 268.39
     },
     {
       "name": "Khronos glTF validation",
       "exit_code": 0,
-      "seconds": 0.65
+      "seconds": 0.4
     },
     {
       "name": "independent GLB import",
       "exit_code": 0,
-      "seconds": 10.06
+      "seconds": 8.22
+    },
+    {
+      "name": "independent FBX geometry import",
+      "exit_code": 0,
+      "seconds": 1.38
     },
     {
       "name": "USDZ export and validation",
       "exit_code": 0,
-      "seconds": 2.45
+      "seconds": 2.43
     },
     {
       "name": "independent USDZ import",
       "exit_code": 0,
-      "seconds": 7.07
+      "seconds": 8.77
     },
     {
       "name": "WebGL mobile viewport",
       "exit_code": 0,
-      "seconds": 18.11
+      "seconds": 16.4
     },
     {
       "name": "archive integrity and hashes",
       "exit_code": 0,
-      "seconds": 1.55
-    }
-  ],
-  "separate_checks": [
-    {
-      "name": "Export refinement from saved native scene",
-      "exit_code": 0,
-      "script": "scripts/export_meshes.py",
-      "note": "Executed during source rendering; final GLB subsequently passed all pipeline checks."
-    },
-    {
-      "name": "Independent FBX geometry import",
-      "exit_code": 0,
-      "report": "fbx_import_check.json"
+      "seconds": 1.06
     }
   ]
 }

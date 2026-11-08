@@ -1,36 +1,37 @@
 {
-  "glb_sha256": "1fb212b8e98408530bf11747391ffe618d4f0f32a415225ce448d785593ac870",
+  "glb_sha256": "f95d42c2e629961ef1b75c58c0fcd08b35e7c6bfc8b23a1d893b4e910f31a35c",
   "denoising": true,
+  "samples": 24,
+  "resolution": [
+    768,
+    960
+  ],
   "views": {
     "Front": {
       "rendered": true,
-      "seconds": 187.88,
-      "sha256": "324fdf009f9586815e5945048ba60b5b8e79f8bc2b1a4f679e97d0dbf5ebd605"
+      "seconds": 55.31,
+      "sha256": "a214e2869bdebf881ace5de94f8c3b687de5887f18bea2ff7177175e4a4691c0"
     },
     "Back": {
       "rendered": true,
-      "seconds": 173.18,
-      "sha256": "376435f06202201f7c5fc2d875da6ca85dab659efa8de303c31c03597fb236c3"
+      "seconds": 50.65,
+      "sha256": "1fd2c3ce1e09bfc19e14d1be8fe678a8cba9a3f22ad65c923380a16dd64c8de5"
     },
     "Side": {
       "rendered": true,
-      "seconds": 150.78,
-      "sha256": "cc95b34366106f1a6fd3baf497c9253d60fb6c142c1dee96ad3e9005a4a34f2c"
+      "seconds": 51.33,
+      "sha256": "5d49e826d8036467521a8b9082efa02dede92a55ef41e7adc682f9a72ecbb257"
     },
     "Right": {
       "rendered": true,
-      "seconds": 147.78,
-      "sha256": "30c6c3ad23a20a4adfb9c2de48523a8fd08e7d08b1d61a73ad853c132fa93015"
+      "seconds": 51.25,
+      "sha256": "2077bab997353d3198eb5a068a2806b803a83bffe20e6bc14ecc69edc6c0cf7c"
     },
     "45": {
       "rendered": true,
-      "seconds": 179.78,
-      "sha256": "a260b63ec36050593d337195819d179e50e5903abdb899ee26f5321ef2d172d6"
+      "seconds": 51.77,
+      "sha256": "ba230f7d68e74eee4f28ea1715243e8a36be215cb250e9b36284bb481f13c87d"
     }
   },
-  "blend_sha256": "029b6b23aa739e6a1b7b282f746be7adfe45daca58207d43d252c23c43d66355",
-  "export_refinement": {
-    "prior_glb_sha256": "744b25ac0f55a68ecf3df4652591c5d1a085df4774bc3275c7acc8a5e9085af7",
-    "reason": "Export-only cap triangulation, explicit tangent frames and signed-16-bit vector storage from the same saved native scene; source render geometry unchanged."
-  }
+  "blend_sha256": "7ab1137ac76bbbc71415ca4d0d420c1d4a79e0607c63d2350af7e48aa6aea744"
 }

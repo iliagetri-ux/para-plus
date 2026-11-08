@@ -1,8 +1,8 @@
 {
   "ready": true,
-  "triangles": 199186,
-  "drawCalls": 99,
-  "bytes": 10333344,
+  "triangles": 159708,
+  "drawCalls": 119,
+  "bytes": 7119180,
   "images": 18,
   "errors": [],
   "interactions": {

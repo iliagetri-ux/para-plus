@@ -1,8 +1,8 @@
 {
   "usdz_blender_reimport": true,
-  "meshes": 99,
-  "vertices": 192045,
-  "triangles": 199186,
+  "meshes": 119,
+  "vertices": 131695,
+  "triangles": 159708,
   "nonfinite_vertices": 0,
   "degenerate_faces": 0,
   "materials": 9,
