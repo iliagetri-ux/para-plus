@@ -1,0 +1,11 @@
+{
+  "asset_meshes": 98,
+  "vertices_base": 82712,
+  "polygons_base": 73564,
+  "reference": "docs/Reference.jpg; artistic review recorded separately in docs/ART_REVIEW.md",
+  "limitations": [
+    "Static posed mesh; no rig or LODs",
+    "PBR albedo, roughness and tangent normal maps are embedded; game-specific atlas baking is still pending",
+    "No production retopology or collision clearance certification"
+  ]
+}

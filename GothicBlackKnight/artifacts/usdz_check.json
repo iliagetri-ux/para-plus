@@ -1,0 +1,18 @@
+{
+  "usd_version": [
+    0,
+    26,
+    11
+  ],
+  "usdz_reopened": true,
+  "mesh_count": 119,
+  "triangles": 159708,
+  "bytes": 5475126,
+  "physical_iphone_test": false,
+  "package_files": 19,
+  "all_entries_uncompressed": true,
+  "all_entries_64_byte_aligned": true,
+  "validation_engine": "OpenUSD 26.11 UsdValidation, all registered validators",
+  "validation_issues": [],
+  "all_texture_assets_resolved": true
+}

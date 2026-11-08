@@ -1,0 +1,19 @@
+{
+  "ready": true,
+  "triangles": 159708,
+  "drawCalls": 119,
+  "bytes": 7119180,
+  "images": 18,
+  "errors": [],
+  "interactions": {
+    "touch_orbit": true,
+    "pinch_zoom": true,
+    "reset": true
+  },
+  "pageErrors": [],
+  "viewport": {
+    "width": 430,
+    "height": 932
+  },
+  "browser": "Chromium headless SwiftShader; mobile viewport, not physical iPhone"
+}

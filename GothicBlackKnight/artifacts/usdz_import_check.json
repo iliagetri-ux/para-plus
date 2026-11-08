@@ -1,0 +1,24 @@
+{
+  "usdz_blender_reimport": true,
+  "meshes": 119,
+  "vertices": 131695,
+  "triangles": 159708,
+  "nonfinite_vertices": 0,
+  "degenerate_faces": 0,
+  "materials": 9,
+  "uv_missing": [],
+  "world_bounds": [
+    [
+      -0.7277432084083557,
+      0.7822650074958801
+    ],
+    [
+      -0.22186000645160675,
+      0.391071081161499
+    ],
+    [
+      0.025000007823109627,
+      2.0517995357513428
+    ]
+  ]
+}

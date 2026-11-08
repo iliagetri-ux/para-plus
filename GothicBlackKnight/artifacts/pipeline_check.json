@@ -1,0 +1,47 @@
+{
+  "blender": "/workspace/tools/blender-4.3.2-linux-x64/blender",
+  "denoising": true,
+  "resumed": false,
+  "steps": [
+    {
+      "name": "model and five renders",
+      "exit_code": 0,
+      "seconds": 268.39
+    },
+    {
+      "name": "Khronos glTF validation",
+      "exit_code": 0,
+      "seconds": 0.4
+    },
+    {
+      "name": "independent GLB import",
+      "exit_code": 0,
+      "seconds": 8.22
+    },
+    {
+      "name": "independent FBX geometry import",
+      "exit_code": 0,
+      "seconds": 1.38
+    },
+    {
+      "name": "USDZ export and validation",
+      "exit_code": 0,
+      "seconds": 2.43
+    },
+    {
+      "name": "independent USDZ import",
+      "exit_code": 0,
+      "seconds": 8.77
+    },
+    {
+      "name": "WebGL mobile viewport",
+      "exit_code": 0,
+      "seconds": 16.4
+    },
+    {
+      "name": "archive integrity and hashes",
+      "exit_code": 0,
+      "seconds": 1.06
+    }
+  ]
+}

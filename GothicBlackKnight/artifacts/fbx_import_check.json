@@ -1,0 +1,22 @@
+{
+  "fbx_reimport": true,
+  "meshes": 98,
+  "vertices": 86118,
+  "nonfinite_vertices": 0,
+  "uv_missing": [],
+  "world_bounds": [
+    [
+      -0.7277432680130005,
+      0.7822650671005249
+    ],
+    [
+      -0.22186000645160675,
+      0.39107123017311096
+    ],
+    [
+      0.025000017136335373,
+      2.0517995357513428
+    ]
+  ],
+  "material_appearance_certified": false
+}

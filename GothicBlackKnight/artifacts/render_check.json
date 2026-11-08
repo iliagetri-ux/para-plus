@@ -1,0 +1,37 @@
+{
+  "glb_sha256": "f95d42c2e629961ef1b75c58c0fcd08b35e7c6bfc8b23a1d893b4e910f31a35c",
+  "denoising": true,
+  "samples": 24,
+  "resolution": [
+    768,
+    960
+  ],
+  "views": {
+    "Front": {
+      "rendered": true,
+      "seconds": 55.31,
+      "sha256": "a214e2869bdebf881ace5de94f8c3b687de5887f18bea2ff7177175e4a4691c0"
+    },
+    "Back": {
+      "rendered": true,
+      "seconds": 50.65,
+      "sha256": "1fd2c3ce1e09bfc19e14d1be8fe678a8cba9a3f22ad65c923380a16dd64c8de5"
+    },
+    "Side": {
+      "rendered": true,
+      "seconds": 51.33,
+      "sha256": "5d49e826d8036467521a8b9082efa02dede92a55ef41e7adc682f9a72ecbb257"
+    },
+    "Right": {
+      "rendered": true,
+      "seconds": 51.25,
+      "sha256": "2077bab997353d3198eb5a068a2806b803a83bffe20e6bc14ecc69edc6c0cf7c"
+    },
+    "45": {
+      "rendered": true,
+      "seconds": 51.77,
+      "sha256": "ba230f7d68e74eee4f28ea1715243e8a36be215cb250e9b36284bb481f13c87d"
+    }
+  },
+  "blend_sha256": "7ab1137ac76bbbc71415ca4d0d420c1d4a79e0607c63d2350af7e48aa6aea744"
+}
