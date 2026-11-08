@@ -1,0 +1,17 @@
+{
+  "base_commit": "92c98eefedf760f42ad7a9bf96388e32fc80c7df",
+  "source_meshes": 633,
+  "archive_objects": 8,
+  "new_objects": 542,
+  "resolution": [
+    1280,
+    1440
+  ],
+  "samples": 48,
+  "views": {
+    "front": "b67dc29a2206eb978c8adf4d018776f0be4e64122a13ac739e3d8abadc053929",
+    "back": "5d10a413168d44bf5241bf570820612ea80023682daf359daf641302ee01c5ba",
+    "side": "0a7c2a2243ddc31dc7326bfa94aea6d1fbd2271185b853178962a14196057a24",
+    "perspective": "e1c7ddd71f53d0be1e35bbbe172dce4f01eb6f49427dddf953f388a7b8ab78ef"
+  }
+}

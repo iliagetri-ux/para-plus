@@ -1,0 +1,50 @@
+{
+  "blend_reopened": true,
+  "blend_visible_meshes": 633,
+  "base_commit": "92c98eefedf760f42ad7a9bf96388e32fc80c7df",
+  "glb_reopened": true,
+  "glb_meshes": 633,
+  "triangles": 657034,
+  "nonfinite_vertices": 0,
+  "degenerate_faces": 0,
+  "degenerate_meshes": {},
+  "uv_missing": [],
+  "textures_missing": [],
+  "bounds": [
+    [
+      -0.8236890435218811,
+      1.4248881340026855
+    ],
+    [
+      -0.22186000645160675,
+      0.4021800458431244
+    ],
+    [
+      0.01793951354920864,
+      2.110281467437744
+    ]
+  ],
+  "materials": [
+    "01 | Blackened forged steel",
+    "02 | Patinated warm metal edges",
+    "03 | Recessed steel",
+    "04 | Charcoal woven wool",
+    "05 | Oxblood leather",
+    "06 | Garnet",
+    "07 | Faded oxblood heraldry",
+    "08 | Aged warm brass inlay",
+    "09 | Engraved recess",
+    "10 | Honed steel bevel",
+    "11 | Black plate, localized wear"
+  ],
+  "independent_render": true,
+  "sha256": {
+    "Gothic_Black_Knight.blend": "06ba4a0efa1a57774e041ea448553c7d33080cfa25238d452b524a52aba89085",
+    "Gothic_Black_Knight.glb": "d56440c7f38b3f77e31936b139b852cb49f673cdba09ff544f6512ebfd58a28d",
+    "preview_front.png": "b67dc29a2206eb978c8adf4d018776f0be4e64122a13ac739e3d8abadc053929",
+    "preview_back.png": "5d10a413168d44bf5241bf570820612ea80023682daf359daf641302ee01c5ba",
+    "preview_side.png": "0a7c2a2243ddc31dc7326bfa94aea6d1fbd2271185b853178962a14196057a24",
+    "preview_perspective.png": "e1c7ddd71f53d0be1e35bbbe172dce4f01eb6f49427dddf953f388a7b8ab78ef",
+    "preview_glb_reimport.png": "d0e90fd925dd39ef61c78966b79abd1526ad4e856561d182ee6ef1958bf56ee3"
+  }
+}

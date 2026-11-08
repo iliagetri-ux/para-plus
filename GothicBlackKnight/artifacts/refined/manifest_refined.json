@@ -1,0 +1,34 @@
+{
+  "files": {
+    "Gothic_Black_Knight.blend": {
+      "bytes": 9027088,
+      "sha256": "06ba4a0efa1a57774e041ea448553c7d33080cfa25238d452b524a52aba89085"
+    },
+    "Gothic_Black_Knight.glb": {
+      "bytes": 27901852,
+      "sha256": "d56440c7f38b3f77e31936b139b852cb49f673cdba09ff544f6512ebfd58a28d"
+    },
+    "preview_front.png": {
+      "bytes": 1397416,
+      "sha256": "b67dc29a2206eb978c8adf4d018776f0be4e64122a13ac739e3d8abadc053929"
+    },
+    "preview_back.png": {
+      "bytes": 1190202,
+      "sha256": "5d10a413168d44bf5241bf570820612ea80023682daf359daf641302ee01c5ba"
+    },
+    "preview_side.png": {
+      "bytes": 904926,
+      "sha256": "0a7c2a2243ddc31dc7326bfa94aea6d1fbd2271185b853178962a14196057a24"
+    },
+    "preview_perspective.png": {
+      "bytes": 1308656,
+      "sha256": "e1c7ddd71f53d0be1e35bbbe172dce4f01eb6f49427dddf953f388a7b8ab78ef"
+    },
+    "preview_glb_reimport.png": {
+      "bytes": 550435,
+      "sha256": "d0e90fd925dd39ef61c78966b79abd1526ad4e856561d182ee6ef1958bf56ee3"
+    }
+  },
+  "artistic_reference_target_met": false,
+  "status": "Validated intermediate sculptural refinement; not a finished production game asset"
+}

@@ -1,5 +1,44 @@
 # Gothic Black Knight
 
+## Current continuation — 2026-11-09
+
+The new reference is [Reference_2026-11-09.png](docs/Reference_2026-11-09.png).
+The latest continuation is in **[artifacts/refined/](artifacts/refined/)**:
+[BLEND](artifacts/refined/Gothic_Black_Knight.blend),
+[GLB](artifacts/refined/Gothic_Black_Knight.glb),
+[front](artifacts/refined/preview_front.png),
+[back](artifacts/refined/preview_back.png),
+[side](artifacts/refined/preview_side.png),
+[perspective](artifacts/refined/preview_perspective.png).
+
+This pass opens the existing saved BLEND from `92c98ee`; it does not rebuild the
+character from primitives. It adds swept helmet blades, articulated pointed
+breast/shoulder/hip plates, engraving and portable localized wear maps, reshapes
+the original cape, and reposes the existing forearm and sword. Superseded forms
+are retained in a hidden archive collection. The previous artifact set below is
+unchanged. The new source and GLB contain no ground or environment geometry.
+
+**This remains an intermediate static character study, below the supplied
+reference's sculptural detail and production-game quality.** See
+[continuation review](docs/REFINEMENT_2026-11-09.md). Legacy FBX/USDZ files and
+legacy validation reports describe the previous version only.
+
+Reproduce with official Blender 4.5.3 LTS and a Python interpreter with Pillow:
+
+```powershell
+$env:KNIGHT_PYTHON = 'path/to/python.exe'
+blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/refine_saved.py
+blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/validate_refined.py
+node GothicBlackKnight/scripts/check_refined_glb.cjs
+python GothicBlackKnight/scripts/finalize_refined.py
+```
+
+The Node check expects `gltf-validator` unpacked into `GothicBlackKnight/.deps/gltf-validator`.
+Set `KNIGHT_PROOF=1` for reduced proofs under ignored `proof/refinement/`.
+Only the reports inside `artifacts/refined/` apply to this continuation.
+
+## Previous checkpoint
+
 An editable, static Gothic knight modeled in Blender 4.3.2 against [the supplied reference](docs/Reference.jpg). Current artistic fidelity remains below the reference; this is not a finished production game asset.
 
 ## Deliverables
