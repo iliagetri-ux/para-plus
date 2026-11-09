@@ -1,17 +1,16 @@
 {
-  "base_commit": "92c98eefedf760f42ad7a9bf96388e32fc80c7df",
-  "source_meshes": 633,
-  "archive_objects": 8,
-  "new_objects": 542,
+  "base_commit": "4526999d0d75787b148da734cb5ee2e97313a39a",
+  "source_meshes": 1085,
+  "new_objects": 471,
   "resolution": [
     1280,
     1440
   ],
-  "samples": 48,
+  "samples": 64,
   "views": {
-    "front": "b67dc29a2206eb978c8adf4d018776f0be4e64122a13ac739e3d8abadc053929",
-    "back": "5d10a413168d44bf5241bf570820612ea80023682daf359daf641302ee01c5ba",
-    "side": "0a7c2a2243ddc31dc7326bfa94aea6d1fbd2271185b853178962a14196057a24",
-    "perspective": "e1c7ddd71f53d0be1e35bbbe172dce4f01eb6f49427dddf953f388a7b8ab78ef"
+    "front": "8b91eaf4d8d494811bc79b440eeeaae47eaa17650b0b06ad28b1e83aa3588694",
+    "back": "053708abb150c7060fc516b6eec01c509cfe48e7bb92bbaa00cfac12aca6d4c2",
+    "side": "4d94dc1ca477838bbfa2cc4b271193d838ec7cfe88c5c6b93ffd28a04cd5c311",
+    "perspective": "c5d397c92bd70ee3437a7a27ce2041be1776404e42282c779a4fab70cff9980a"
   }
 }

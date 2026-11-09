@@ -2,6 +2,13 @@
 
 ## Current continuation — 2026-11-09
 
+The current surface-detail pass continues the saved `4526999` scene. It adds
+fitted temple/occipital shells, individual phalanx plates, UV-seated microengraving,
+unique cloak wear maps, evolving folds, narrow tears and actual frayed strands.
+The coarse legacy foil-like relief is archived, not deleted. The native scene
+retains separate editable details; the GLB batches static geometry by material
+and uses render-level subdivision. See [surface-pass review](docs/SURFACE_PASS.md).
+
 The new reference is [Reference_2026-11-09.png](docs/Reference_2026-11-09.png).
 The latest continuation is in **[artifacts/refined/](artifacts/refined/)**:
 [BLEND](artifacts/refined/Gothic_Black_Knight.blend),
@@ -11,7 +18,7 @@ The latest continuation is in **[artifacts/refined/](artifacts/refined/)**:
 [side](artifacts/refined/preview_side.png),
 [perspective](artifacts/refined/preview_perspective.png).
 
-This pass opens the existing saved BLEND from `92c98ee`; it does not rebuild the
+The first continuation opened the existing saved BLEND from `92c98ee`; it did not rebuild the
 character from primitives. It adds swept helmet blades, articulated pointed
 breast/shoulder/hip plates, engraving and portable localized wear maps, reshapes
 the original cape, and reposes the existing forearm and sword. Superseded forms
@@ -23,18 +30,23 @@ reference's sculptural detail and production-game quality.** See
 [continuation review](docs/REFINEMENT_2026-11-09.md). Legacy FBX/USDZ files and
 legacy validation reports describe the previous version only.
 
-Reproduce with official Blender 4.5.3 LTS and a Python interpreter with Pillow:
+Reproduce with official Blender 4.5.3 LTS and a Python interpreter with Pillow.
+The script restores the saved BLEND from local Git commit `4526999` into the
+ignored checkpoint cache when needed, then checks its SHA-256.
 
 ```powershell
 $env:KNIGHT_PYTHON = 'path/to/python.exe'
-blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/refine_saved.py
+blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/refine_surface_pass.py
 blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/validate_refined.py
 node GothicBlackKnight/scripts/check_refined_glb.cjs
+$env:KNIGHT_DETAILS_OUT = 'GothicBlackKnight/artifacts/refined'
+$env:KNIGHT_DETAIL_PREFIX = 'detail_'
+blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/inspect_details.py
 python GothicBlackKnight/scripts/finalize_refined.py
 ```
 
 The Node check expects `gltf-validator` unpacked into `GothicBlackKnight/.deps/gltf-validator`.
-Set `KNIGHT_PROOF=1` for reduced proofs under ignored `proof/refinement/`.
+Set `KNIGHT_PROOF=1` for reduced proofs under ignored `proof/surface-pass/`.
 Only the reports inside `artifacts/refined/` apply to this continuation.
 
 ## Previous checkpoint

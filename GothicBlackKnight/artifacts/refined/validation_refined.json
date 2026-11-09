@@ -1,10 +1,10 @@
 {
   "blend_reopened": true,
-  "blend_visible_meshes": 633,
-  "base_commit": "92c98eefedf760f42ad7a9bf96388e32fc80c7df",
+  "blend_visible_meshes": 1085,
+  "base_commit": "4526999d0d75787b148da734cb5ee2e97313a39a",
   "glb_reopened": true,
-  "glb_meshes": 633,
-  "triangles": 657034,
+  "glb_meshes": 1,
+  "triangles": 1150606,
   "nonfinite_vertices": 0,
   "degenerate_faces": 0,
   "degenerate_meshes": {},
@@ -12,15 +12,15 @@
   "textures_missing": [],
   "bounds": [
     [
-      -0.8236890435218811,
-      1.4248881340026855
+      -0.8118001222610474,
+      1.365078091621399
     ],
     [
       -0.22186000645160675,
-      0.4021800458431244
+      0.40273550152778625
     ],
     [
-      0.01793951354920864,
+      0.009325088001787663,
       2.110281467437744
     ]
   ],
@@ -35,16 +35,23 @@
     "08 | Aged warm brass inlay",
     "09 | Engraved recess",
     "10 | Honed steel bevel",
-    "11 | Black plate, localized wear"
+    "12 | Exposed charcoal fibres",
+    "13 | Waxed black linen stitching",
+    "14 | Weathered sword leather",
+    "15 | Weathered woven cloak",
+    "16 | Chased black steel, seated microrelief"
   ],
   "independent_render": true,
   "sha256": {
-    "Gothic_Black_Knight.blend": "06ba4a0efa1a57774e041ea448553c7d33080cfa25238d452b524a52aba89085",
-    "Gothic_Black_Knight.glb": "d56440c7f38b3f77e31936b139b852cb49f673cdba09ff544f6512ebfd58a28d",
-    "preview_front.png": "b67dc29a2206eb978c8adf4d018776f0be4e64122a13ac739e3d8abadc053929",
-    "preview_back.png": "5d10a413168d44bf5241bf570820612ea80023682daf359daf641302ee01c5ba",
-    "preview_side.png": "0a7c2a2243ddc31dc7326bfa94aea6d1fbd2271185b853178962a14196057a24",
-    "preview_perspective.png": "e1c7ddd71f53d0be1e35bbbe172dce4f01eb6f49427dddf953f388a7b8ab78ef",
-    "preview_glb_reimport.png": "d0e90fd925dd39ef61c78966b79abd1526ad4e856561d182ee6ef1958bf56ee3"
+    "Gothic_Black_Knight.blend": "8e5a89b7be7aebf711d4ceed16a6febbde1ec4800908aa7513ce018deb4f23ed",
+    "Gothic_Black_Knight.glb": "6d5d060b6b53d00e0318221ed1e4a210dab4e4b3bbc01a69dbbe2664464fedfc",
+    "preview_front.png": "8b91eaf4d8d494811bc79b440eeeaae47eaa17650b0b06ad28b1e83aa3588694",
+    "preview_back.png": "053708abb150c7060fc516b6eec01c509cfe48e7bb92bbaa00cfac12aca6d4c2",
+    "preview_side.png": "4d94dc1ca477838bbfa2cc4b271193d838ec7cfe88c5c6b93ffd28a04cd5c311",
+    "preview_perspective.png": "c5d397c92bd70ee3437a7a27ce2041be1776404e42282c779a4fab70cff9980a",
+    "preview_glb_reimport.png": "2ba12e20d49a602c3ca5bded6368e7e3295cbc2500f0d005ae55efffc4d865dd",
+    "detail_armor.png": "1c8df2496ab3cda10588add453f8c1dfa084703851fd9413085a8a9e9858c61e",
+    "detail_hand.png": "345d4257a2ffe7996280bb504407ea972279bb71281478b6a770905a4cb642c2",
+    "detail_rear.png": "97700e2d7616e8c00c05aaa8a17d8eb8c0fe764c794d68ad7dd4e5236b909378"
   }
 }
