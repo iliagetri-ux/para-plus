@@ -12,6 +12,9 @@ assert not gltf['issues']['numErrors'] and not gltf['issues']['truncated']
 manifest={name:{'bytes':(out/name).stat().st_size,'sha256':hashlib.sha256((out/name).read_bytes()).hexdigest()} for name in files}
 for name in ['Gothic_Black_Knight.blend','Gothic_Black_Knight.glb','preview_glb_reimport.png']:
     assert check['sha256'][name]==manifest[name]['sha256'], f'Revalidate changed file: {name}'
+if (out/'pose_check.json').exists():
+    pose=json.loads((out/'pose_check.json').read_text())
+    assert pose['native_sha256']==manifest['Gothic_Black_Knight.blend']['sha256'], 'Recheck changed pose source'
 render_check=json.loads((out/'refinement_check.json').read_text())
 for view in ['front','back','side','perspective']:
     assert render_check['views'][view]==manifest[f'preview_{view}.png']['sha256'], f'Rerender changed view: {view}'

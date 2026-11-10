@@ -1,10 +1,10 @@
 {
   "blend_reopened": true,
   "blend_visible_meshes": 1085,
-  "base_commit": "4526999d0d75787b148da734cb5ee2e97313a39a",
+  "base_commit": "29494cdf6b974546e7c70f7745b0da94514f83d6",
   "glb_reopened": true,
   "glb_meshes": 1,
-  "triangles": 1150606,
+  "triangles": 1150786,
   "nonfinite_vertices": 0,
   "degenerate_faces": 0,
   "degenerate_meshes": {},
@@ -12,16 +12,16 @@
   "textures_missing": [],
   "bounds": [
     [
-      -0.8118001222610474,
-      1.365078091621399
+      -0.836800217628479,
+      1.152838110923767
     ],
     [
-      -0.22186000645160675,
+      -0.4158434569835663,
       0.40273550152778625
     ],
     [
-      0.009325088001787663,
-      2.110281467437744
+      0.017999999225139618,
+      2.1086814403533936
     ]
   ],
   "materials": [
@@ -43,15 +43,16 @@
   ],
   "independent_render": true,
   "sha256": {
-    "Gothic_Black_Knight.blend": "8e5a89b7be7aebf711d4ceed16a6febbde1ec4800908aa7513ce018deb4f23ed",
-    "Gothic_Black_Knight.glb": "6d5d060b6b53d00e0318221ed1e4a210dab4e4b3bbc01a69dbbe2664464fedfc",
-    "preview_front.png": "8b91eaf4d8d494811bc79b440eeeaae47eaa17650b0b06ad28b1e83aa3588694",
-    "preview_back.png": "053708abb150c7060fc516b6eec01c509cfe48e7bb92bbaa00cfac12aca6d4c2",
-    "preview_side.png": "4d94dc1ca477838bbfa2cc4b271193d838ec7cfe88c5c6b93ffd28a04cd5c311",
-    "preview_perspective.png": "c5d397c92bd70ee3437a7a27ce2041be1776404e42282c779a4fab70cff9980a",
-    "preview_glb_reimport.png": "2ba12e20d49a602c3ca5bded6368e7e3295cbc2500f0d005ae55efffc4d865dd",
-    "detail_armor.png": "1c8df2496ab3cda10588add453f8c1dfa084703851fd9413085a8a9e9858c61e",
-    "detail_hand.png": "345d4257a2ffe7996280bb504407ea972279bb71281478b6a770905a4cb642c2",
-    "detail_rear.png": "97700e2d7616e8c00c05aaa8a17d8eb8c0fe764c794d68ad7dd4e5236b909378"
+    "Gothic_Black_Knight.blend": "7c07c0b82c21d6a3903b5236505c41a4b66fa78c8219e048cb056067c03c73b6",
+    "Gothic_Black_Knight.glb": "a6544b5a9f560e1127acf81a5b959b3b9d1b83b01990f29c05fcc656bc532f42",
+    "preview_front.png": "f79eee79a67a9d308a5fe5e329a6d2b70d2b96245b4d048981573c081466e402",
+    "preview_back.png": "e8fefe3a544319aca198b124dfd403eeb33108e907ddc5a4c92da3e2381cdb7b",
+    "preview_side.png": "4d3f205420aa223ce7095acbaf2368919234b914ec443bc35fd5affb8eba73fa",
+    "preview_perspective.png": "a8562f9860be0308c34f5d5b3e41719c8397e719cb93b870b912cc26a00700e4",
+    "preview_glb_reimport.png": "7bc2246caaf3b3ecec2e4a9edec041ca98f39f2b1b9d0c9e103a390526085fc3",
+    "detail_armor.png": "c1bf380dfcc983966f235e82261108114c05ba44aa95bcda3777b8c55a0670a4",
+    "detail_feet.png": "81dff0ece17f8cb4322785133c6a7d97028e31ccaa7ce2433e6744326d1fb78b",
+    "detail_hand.png": "11121061247e7fa11df03b5596d241bed7e94ab01c27e5126eff3499770e44a6",
+    "detail_rear.png": "40a674bb7f548aaa88e81103681f2adf487da7c0dd41c4d83654697a77f9ef4d"
   }
 }

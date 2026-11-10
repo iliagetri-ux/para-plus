@@ -1,6 +1,6 @@
 {
-  "repaired_zero_tangents": 13,
+  "repaired_zero_tangents": 18,
   "geometry_uv_textures_unchanged": true,
-  "before_sha256": "a69043205c558a0eb796b6f844940954a1cfb37442ce9611dcae92fb7a0ddd79",
-  "after_sha256": "6d5d060b6b53d00e0318221ed1e4a210dab4e4b3bbc01a69dbbe2664464fedfc"
+  "before_sha256": "2cfe2dfd48acd8e96537f0c8cd827a47dbc7d972e830f0053340e70781678b90",
+  "after_sha256": "a6544b5a9f560e1127acf81a5b959b3b9d1b83b01990f29c05fcc656bc532f42"
 }

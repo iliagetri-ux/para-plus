@@ -13,7 +13,13 @@ try:
  for d in p.devices:d.use=d.type=='CUDA'
  if any(d.type=='CUDA' for d in p.devices):s.cycles.device='GPU'
 except Exception:s.cycles.device='CPU'
-for name,pos,target,scale in [('armor',(-2.2,-4,2.3),(0,0,1.58),1.10),('hand',(1.5,-3,1.5),(.61,-.10,1.10),.44),('rear',(2,4,2.2),(0,.1,1.76),.85)]:
+views=[('armor',(-2.2,-4,2.3),(0,0,1.58),1.10),('hand',(1.5,-3,1.5),(.61,-.10,1.10),.44),('rear',(2,4,2.2),(0,.1,1.76),.85)]
+if s.get('pose_pass'):
+ hand=bpy.data.objects['Gauntlet metacarpal plate.001']
+ center=sum((hand.matrix_world@Vector(c) for c in hand.bound_box),Vector())/8
+ views=[('armor',(-2.2,-4,2.3),(-.06,0,1.58),1.10),('hand',center+Vector((1.1,-3,.5)),center+Vector((.05,0,-.05)),.46),('rear',(2,4,2.2),(-.06,.1,1.76),.85)]
+ views.append(('feet',(-1.5,-3,.75),(-.015,-.02,.27),.80))
+for name,pos,target,scale in views:
  s.camera.location=pos;s.camera.rotation_euler=(Vector(target)-s.camera.location).to_track_quat('-Z','Y').to_euler();s.camera.data.ortho_scale=scale
  s.render.filepath=str(out/(prefix+name+'.png'));bpy.ops.render.render(write_still=True)
 report=[]

@@ -1,8 +1,15 @@
 # Gothic Black Knight
 
-## Current continuation — 2026-11-09
+## Current continuation — 2026-11-10
 
-The current surface-detail pass continues the saved `4526999` scene. It adds
+The current pose pass opens the saved `29494cd` scene. The pelvis shifts over
+the left support leg; the right foot advances and turns out with a relaxed knee.
+The chest counterturns, the head inclines slightly, and the sword arm bends
+forward closer to the body. Armor pieces retain their shape and material maps;
+padding, cloth and its border trim follow the new pose. See
+[pose review](docs/POSE_PASS.md).
+
+The preceding surface-detail pass continued the saved `4526999` scene. It added
 fitted temple/occipital shells, individual phalanx plates, UV-seated microengraving,
 unique cloak wear maps, evolving folds, narrow tears and actual frayed strands.
 The coarse legacy foil-like relief is archived, not deleted. The native scene
@@ -31,12 +38,12 @@ reference's sculptural detail and production-game quality.** See
 legacy validation reports describe the previous version only.
 
 Reproduce with official Blender 4.5.3 LTS and a Python interpreter with Pillow.
-The script restores the saved BLEND from local Git commit `4526999` into the
+The script restores the saved BLEND from local Git commit `29494cd` into the
 ignored checkpoint cache when needed, then checks its SHA-256.
 
 ```powershell
 $env:KNIGHT_PYTHON = 'path/to/python.exe'
-blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/refine_surface_pass.py
+blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/refine_pose.py
 blender -b --python-exit-code 1 --python GothicBlackKnight/scripts/validate_refined.py
 node GothicBlackKnight/scripts/check_refined_glb.cjs
 $env:KNIGHT_DETAILS_OUT = 'GothicBlackKnight/artifacts/refined'
@@ -46,7 +53,7 @@ python GothicBlackKnight/scripts/finalize_refined.py
 ```
 
 The Node check expects `gltf-validator` unpacked into `GothicBlackKnight/.deps/gltf-validator`.
-Set `KNIGHT_PROOF=1` for reduced proofs under ignored `proof/surface-pass/`.
+Set `KNIGHT_PROOF=1` for reduced proofs under ignored `proof/pose/`.
 Only the reports inside `artifacts/refined/` apply to this continuation.
 
 ## Previous checkpoint
