@@ -1,0 +1,21 @@
+{
+  "url": "https://sandbox.babylonjs.com/?assetUrl=https://raw.githubusercontent.com/iliagetri-ux/para-plus/92c98eefedf760f42ad7a9bf96388e32fc80c7df/GothicBlackKnight/artifacts/GothicBlackKnight.glb",
+  "readiness": "mesh loaded",
+  "responses": [
+    {
+      "url": "https://raw.githubusercontent.com/iliagetri-ux/para-plus/92c98eefedf760f42ad7a9bf96388e32fc80c7df/GothicBlackKnight/artifacts/GothicBlackKnight.glb",
+      "status": 200
+    }
+  ],
+  "errors": [],
+  "browser": "Chromium/SwiftShader at 430x932; not a physical iPhone",
+  "body": "",
+  "scene": [
+    [
+      {
+        "meshes": 121,
+        "vertices": 131719
+      }
+    ]
+  ]
+}

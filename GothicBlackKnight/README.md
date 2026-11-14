@@ -1,5 +1,7 @@
 # Gothic Black Knight
 
+[Open the current model in an online 3D viewer](https://sandbox.babylonjs.com/?assetUrl=https://raw.githubusercontent.com/iliagetri-ux/para-plus/92c98eefedf760f42ad7a9bf96388e32fc80c7df/GothicBlackKnight/artifacts/GothicBlackKnight.glb). This loads the public GLB directly in Babylon Sandbox. Verified in Chromium with a mobile viewport; physical iPhone testing has not been performed.
+
 An editable, static Gothic knight modeled in Blender 4.3.2 against [the supplied reference](docs/Reference.jpg). Current artistic fidelity remains below the reference; this is not a finished production game asset.
 
 ## Deliverables
